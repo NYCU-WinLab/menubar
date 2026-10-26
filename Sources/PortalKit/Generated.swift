@@ -8,6 +8,7 @@ public enum Contract {
         "add_bento_order_item": (app: "bento", hash: "cbb8a827b0d66f9f"),
         "get_bento_order": (app: "bento", hash: "d4c0ee71b195897b"),
         "get_door_status": (app: "door", hash: "5104c2a84fcdfd13"),
+        "get_lyrics": (app: "music", hash: "1c108c98a4be3a31"),
         "get_next_lab_meeting": (app: "meetings", hash: "b1fd95b2454c78fa"),
         "list_announcements": (app: "bulletin", hash: "441ae543f9b00897"),
         "list_bento_orders": (app: "bento", hash: "0f6c95bc5e889291"),
@@ -201,6 +202,33 @@ public enum GetDoorStatus: PortalAction {
         public var configured: Bool
         public var online: Bool
     }
+}
+
+/// 歌詞
+public enum GetLyrics: PortalAction {
+    public static let name = "get_lyrics"
+    public static let app = "music"
+    public static let hash = "1c108c98a4be3a31"
+
+    public struct Input: Encodable, Sendable, Equatable {
+        public var videoId: String
+
+        public init(videoId: String) {
+            self.videoId = videoId
+        }
+    }
+
+    public struct Result: Decodable, Sendable, Equatable {
+        public var lines: [Line]
+        public var timed: Bool
+
+        public struct Line: Decodable, Sendable, Equatable {
+            public var atS: Double?
+            public var text: String
+        }
+    }
+
+    public typealias Output = Result
 }
 
 /// 下一場實驗室會議

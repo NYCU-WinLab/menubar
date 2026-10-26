@@ -2,7 +2,7 @@ import Foundation
 
 /// UserDefaults keys, one place, so views and the model agree.
 enum Pref {
-    static let showTitleInMenuBar = "showTitleInMenuBar"
+    static let menuBarText = "menuBarText"
     static let notify = "notify"
     static let launchAtLoginOffered = "launchAtLoginOffered"
     static let seenAnnouncements = "seenAnnouncements"
@@ -10,11 +10,12 @@ enum Pref {
 
     /// Fixed choices that used to be settings.
     static let titleWidth = 160
+    static let lyricWidth = 240
     static let volumeStep = 5
     static let meetingLeadMinutes = 10
 
     static func registerDefaults() {
-        UserDefaults.standard.register(defaults: [showTitleInMenuBar: true, notify: true])
+        UserDefaults.standard.register(defaults: [menuBarText: MenuBarText.lyrics.rawValue, notify: true])
     }
 }
 
@@ -55,5 +56,24 @@ enum MenuSection: String, CaseIterable, Identifiable, Codable {
         case .bento: "bento"
         case .bulletin: "bulletin"
         }
+    }
+}
+
+/// What the menu bar shows beside the icon while a song plays.
+enum MenuBarText: String, CaseIterable, Identifiable {
+    case lyrics, title, none
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .lyrics: "歌詞"
+        case .title: "歌名"
+        case .none: "不顯示"
+        }
+    }
+
+    static var current: MenuBarText {
+        MenuBarText(rawValue: UserDefaults.standard.string(forKey: Pref.menuBarText) ?? "") ?? .lyrics
     }
 }

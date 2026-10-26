@@ -209,6 +209,25 @@ struct NowPlayingRow: View {
                         .foregroundStyle(.secondary)
                     }
                 }
+                if !model.lyrics.isEmpty {
+                    TimelineView(.periodic(from: .now, by: 0.25)) { context in
+                        let line = model.lyric(at: context.date)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(line.current ?? "♪")
+                                .font(.system(size: 13, weight: .medium))
+                                .lineLimit(2)
+                                .contentTransition(.opacity)
+                                .animation(.easeInOut(duration: 0.2), value: line.current)
+                            if let next = line.next {
+                                Text(next)
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
                 if !music.online {
                     Label("實驗室的播放器離線", systemImage: "exclamationmark.triangle")
                         .font(.system(size: 11))

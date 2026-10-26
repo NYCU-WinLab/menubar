@@ -127,19 +127,33 @@ func indent(_ text: String, _ by: Int = 1) -> String {
         .map { $0.isEmpty ? "" : pad + $0 }.joined(separator: "\n")
 }
 
+/// Two schemas for the same value, merged: objects key by key, arrays item
+/// by item, anything else as an anyOf (number or null becomes Double?).
+func mergeSchemas(_ a: Schema, _ b: Schema) -> Schema {
+    let ta = a["type"] as? String, tb = b["type"] as? String
+    if ta == "object", tb == "object" { return mergeObjects([a, b]) }
+    if ta == "array", tb == "array" {
+        return ["type": "array", "items": mergeSchemas((a["items"] as? Schema) ?? [:], (b["items"] as? Schema) ?? [:])]
+    }
+    if NSDictionary(dictionary: a).isEqual(to: b) { return a }
+    let parts = ((a["anyOf"] as? [Schema]) ?? [a]) + ((b["anyOf"] as? [Schema]) ?? [b])
+    return ["anyOf": parts]
+}
+
 /// Objects in an anyOf merged into one: a key missing from some variant
-/// becomes optional.
+/// becomes optional, and a key in several variants takes every shape.
 func mergeObjects(_ variants: [Schema]) -> Schema {
-    var properties: [String: Any] = [:]
+    var properties: [String: Schema] = [:]
     var required: Set<String>?
     for v in variants {
-        for (k, s) in (v["properties"] as? [String: Any]) ?? [:] where properties[k] == nil {
-            properties[k] = s
+        for (k, s) in (v["properties"] as? [String: Any]) ?? [:] {
+            guard let s = s as? Schema else { continue }
+            properties[k] = properties[k].map { mergeSchemas($0, s) } ?? s
         }
         let r = Set((v["required"] as? [String]) ?? [])
         required = required.map { $0.intersection(r) } ?? r
     }
-    return ["type": "object", "properties": properties, "required": Array(required ?? [])]
+    return ["type": "object", "properties": properties, "required": Array(required ?? []).sorted()]
 }
 
 /// The Swift type for a schema, declaring nested types in scope. Returns the
@@ -152,6 +166,9 @@ func swiftType(_ schema: Schema, named: String, side: Side, scope: Scope) -> (St
             let (t, inner) = swiftType(rest[0], named: named, side: side, scope: scope)
             return (t, nullable || inner)
         }
+        // Same primitive twice (true and false, two enums): one of them.
+        let kinds = Set(rest.compactMap { $0["type"] as? String })
+        if kinds.count == 1, kinds.first == "boolean" { return ("Bool", nullable) }
         if !rest.isEmpty, rest.allSatisfy({ ($0["type"] as? String) == "object" }) {
             return (swiftType(mergeObjects(rest), named: named, side: side, scope: scope).0, nullable)
         }
