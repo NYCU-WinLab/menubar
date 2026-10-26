@@ -47,9 +47,6 @@ final class AppModel {
     /// A short message after an action (opened the door, ordered).
     private(set) var toast: String?
 
-    /// The bento order the menu is showing, if any.
-    var openBentoOrder: String?
-
     let client: PortalClient
     let notifier = Notifier()
     var updater: Updater?

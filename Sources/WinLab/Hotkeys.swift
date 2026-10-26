@@ -73,8 +73,8 @@ struct Shortcut: Codable, Equatable, Hashable {
             kVK_F7: "F7", kVK_F8: "F8", kVK_F9: "F9", kVK_F10: "F10", kVK_F11: "F11", kVK_F12: "F12",
         ]
         if let name = named[code] { return name }
-        // The character this key types on the current layout.
-        guard let source = TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue(),
+        // The character this key types on an ASCII layout (Zhuyin would say ㄅ).
+        guard let source = TISCopyCurrentASCIICapableKeyboardLayoutInputSource()?.takeRetainedValue(),
               let raw = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData)
         else { return "#\(code)" }
         let data = Unmanaged<CFData>.fromOpaque(raw).takeUnretainedValue() as Data
