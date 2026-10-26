@@ -1,0 +1,48 @@
+name: contract
+
+# Keeps the app aligned with the portal API. Portal publishes its contract in
+# contract/actions.json, and its CI refuses changes that break clients built
+# against main unless a commit says API-Break. Every 6 hours this pulls the
+# contract, regenerates the Swift types and, when anything changed, opens a
+# pull request; a release with it lets the app decode what the portal sends
+# now. The app also checks the contract hashes at launch and looks for an
+# update when they differ.
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+      - name: Pull the portal contract
+        run: scripts/sync-contract.sh
+      - name: Changed?
+        id: diff
+        run: |
+          if git diff --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+      - name: Build and test against it
+        if: steps.diff.outputs.changed == 'true'
+        run: swift build && swift test
+      - name: Open a pull request
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          branch=contract/sync
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$branch"
+          git commit -am "fix(contract): sync the portal API contract"
+          git push -f origin "$branch"
+          gh pr view "$branch" >/dev/null 2>&1 || gh pr create --head "$branch" \
+            --title "fix(contract): sync the portal API contract" \
+            --body "The portal API contract changed. Generated.swift is regenerated from portal main; this workflow built and tested it. Merge, then release."

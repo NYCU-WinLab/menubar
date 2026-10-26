@@ -10,8 +10,10 @@ args="-c release --arch arm64 --arch x86_64 --product WinLab"
 swift build $args
 bin=$(swift build $args --show-bin-path)
 
-app=dist/WinLab.app
+# Outside iCloud: its extended attributes break code signing.
+app=.build/dist/WinLab.app
 rm -rf "$app"
+mkdir -p .build/dist
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$app/Contents/Frameworks"
 cp "$bin/WinLab" "$app/Contents/MacOS/WinLab"
 ditto "$bin/Sparkle.framework" "$app/Contents/Frameworks/Sparkle.framework"

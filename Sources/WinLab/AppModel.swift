@@ -38,7 +38,6 @@ final class AppModel {
     private(set) var queue: [ListQueue.Output.Item] = []
     private(set) var door: GetDoorStatus.Output?
     private(set) var meeting: GetNextLabMeeting.Output.Meeting?
-    private(set) var roomsToday: ListRoomAvailability.Output.Day?
     private(set) var myBookings: [ListMeetings.Output.Booking] = []
     private(set) var bentoOrders: [ListBentoOrders.Output.Order] = []
     private(set) var bentoDetail: [String: GetBentoOrder.Output] = [:]
@@ -46,9 +45,6 @@ final class AppModel {
     private(set) var errors: [MenuSection: String] = [:]
     /// A short message after an action (opened the door, ordered).
     private(set) var toast: String?
-
-    /// The bento order the menu is showing, if any.
-    var openBentoOrder: String?
 
     let client: PortalClient
     let notifier = Notifier()
@@ -131,7 +127,6 @@ final class AppModel {
         queue = []
         door = nil
         meeting = nil
-        roomsToday = nil
         myBookings = []
         bentoOrders = []
         bentoDetail = [:]
@@ -262,11 +257,10 @@ final class AppModel {
 
     private func loadRooms() async {
         await load(.rooms) {
-            async let rooms = self.client.run(ListRoomAvailability.self, .init(date: Self.today(), days: 1, merge: true))
-            async let bookings = self.client.run(ListMeetings.self, .init(date: Self.today(), days: 7))
-            self.roomsToday = try await rooms.days.first
+            // Mine, from today through the next two days.
+            let bookings = try await self.client.run(ListMeetings.self, .init(date: Self.today(), days: 3))
             let me = self.me
-            self.myBookings = try await bookings.bookings.filter { b in
+            self.myBookings = bookings.bookings.filter { b in
                 b.cancelledAt == nil && (b.requestedBy == me?.id || b.attendees.contains { $0.email == me?.email })
             }
         }

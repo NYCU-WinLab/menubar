@@ -3,17 +3,46 @@ import PortalKit
 import ServiceManagement
 import SwiftUI
 
-struct SettingsView: View {
-    var body: some View {
-        TabView {
-            AccountTab().tabItem { Label("帳號", systemImage: "person.crop.circle") }
-            DisplayTab().tabItem { Label("顯示", systemImage: "menubar.rectangle") }
-            NotificationsTab().tabItem { Label("通知", systemImage: "bell") }
-            ShortcutsTab().tabItem { Label("快捷鍵", systemImage: "command") }
-            UpdatesTab().tabItem { Label("更新", systemImage: "arrow.down.circle") }
+/// The settings window: toolbar tabs, as in system apps. Each tab is a
+/// grouped Form at a fixed height, so the window sizes to it.
+@MainActor
+enum SettingsWindow {
+    struct Tab {
+        let title: String
+        let symbol: String
+        let height: CGFloat
+        let view: AnyView
+    }
+
+    static func tabs() -> [Tab] {
+        [
+            Tab(title: "帳號", symbol: "person.crop.circle", height: 380, view: AnyView(AccountTab())),
+            Tab(title: "顯示", symbol: "menubar.rectangle", height: 470, view: AnyView(DisplayTab())),
+            Tab(title: "通知", symbol: "bell.badge", height: 330, view: AnyView(NotificationsTab())),
+            Tab(title: "快捷鍵", symbol: "command", height: 420, view: AnyView(ShortcutsTab())),
+            Tab(title: "更新", symbol: "arrow.down.circle", height: 330, view: AnyView(UpdatesTab())),
+        ]
+    }
+
+    @MainActor
+    static func controller(model: AppModel, updater: Updater) -> NSViewController {
+        let tabs = NSTabViewController()
+        tabs.tabStyle = .toolbar
+        tabs.canPropagateSelectedChildViewControllerTitle = false
+        for tab in self.tabs() {
+            let host = NSHostingController(
+                rootView: tab.view
+                    .frame(width: 520, height: tab.height)
+                    .environment(model)
+                    .environment(updater)
+            )
+            host.sizingOptions = .preferredContentSize
+            let item = NSTabViewItem(viewController: host)
+            item.label = tab.title
+            item.image = NSImage(systemSymbolName: tab.symbol, accessibilityDescription: tab.title)
+            tabs.addTabViewItem(item)
         }
-        .frame(width: 500)
-        .onAppear { NSApp.activate() }
+        return tabs
     }
 }
 

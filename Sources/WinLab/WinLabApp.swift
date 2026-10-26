@@ -1,26 +1,19 @@
 import AppKit
 import SwiftUI
 
+/// An AppKit app: the menu bar item is an NSStatusItem with an NSMenu, and
+/// settings live in StatusMenu's window. (A SwiftUI App would open its
+/// Settings scene by itself at launch.)
 @main
-struct WinLabApp: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
+@MainActor
+enum Main {
+    static let delegate = AppDelegate()
 
-    var body: some Scene {
-        MenuBarExtra {
-            MenuView()
-                .environment(delegate.model)
-                .environment(delegate.updater)
-        } label: {
-            MenuBarLabel()
-                .environment(delegate.model)
-        }
-        .menuBarExtraStyle(.window)
-
-        Settings {
-            SettingsView()
-                .environment(delegate.model)
-                .environment(delegate.updater)
-        }
+    static func main() {
+        let app = NSApplication.shared
+        app.setActivationPolicy(.accessory)
+        app.delegate = delegate
+        app.run()
     }
 }
 
@@ -28,11 +21,19 @@ struct WinLabApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let model = AppModel()
     let updater = Updater()
+    private var statusMenu: StatusMenu?
+    private var bentoWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         model.updater = updater
         model.notifier.requestPermission()
         model.start()
+        StatusMenu.makeSettings = { [model, updater] in
+            SettingsWindow.controller(model: model, updater: updater)
+        }
+        let menu = StatusMenu(model: model, updater: updater)
+        menu.openBento = { [weak self] id in self?.openBento(id) }
+        statusMenu = menu
         Hotkeys.shared.handler = { [model] action in
             Task { @MainActor in
                 switch action {
@@ -48,49 +49,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         Hotkeys.shared.install()
-    }
-}
-
-/// The menu bar item: an icon, and the song title when one plays.
-struct MenuBarLabel: View {
-    @Environment(AppModel.self) private var model
-    @AppStorage(Pref.showTitleInMenuBar) private var showTitle = true
-    @AppStorage(Pref.menuBarTitleWidth) private var width = 160
-
-    var body: some View {
-        let music = model.music
-        let playing = music?.current != nil && music?.paused == false && music?.state == .playing
-        HStack(spacing: 4) {
-            if playing {
-                Image(systemName: "music.note")
-            } else if let mascot = Self.mascot {
-                Image(nsImage: mascot)
-            } else {
-                Image(systemName: "antenna.radiowaves.left.and.right")
-            }
-            if showTitle, playing, let title = music?.current?.track.title {
-                Text(Self.truncate(title, width: width))
+        // Development: WINLAB_OPEN_MENU=1 opens the menu by itself, for
+        // screenshots without touching the mouse.
+        if ProcessInfo.processInfo.environment["WINLAB_OPEN_SETTINGS"] != nil {
+            StatusMenu.openSettings()
+        }
+        if ProcessInfo.processInfo.environment["WINLAB_OPEN_MENU"] != nil {
+            Task {
+                try? await Task.sleep(for: .seconds(4))
+                menu.open()
             }
         }
     }
 
-    /// The WinLab mascot, drawn in the menu bar's color (bundled app only).
-    static let mascot: NSImage? = {
-        let image = Bundle.main.image(forResource: "MenuIcon")
-        image?.isTemplate = true
-        return image
-    }()
-
-    /// MenuBarExtra ignores frame limits, so cut the text itself (about 7 pt
-    /// per Latin character, 13 per CJK one).
-    static func truncate(_ text: String, width: Int) -> String {
-        var used = 0.0
-        var out = ""
-        for ch in text {
-            used += ch.unicodeScalars.first.map { $0.value > 0x2E80 ? 13 : 7 } ?? 7
-            if used > Double(width) { return out.trimmingCharacters(in: .whitespaces) + "…" }
-            out.append(ch)
-        }
-        return out
+    /// A small window for one bento order.
+    func openBento(_ id: String) {
+        bentoWindow?.close()
+        let window = NSWindow(
+            contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: false
+        )
+        window.title = model.bentoDetail[id]?.restaurant.name ?? "便當"
+        window.isReleasedWhenClosed = false
+        window.contentViewController = NSHostingController(
+            rootView: BentoOrderView(orderId: id) { [weak window] in window?.close() }
+                .environment(model)
+        )
+        window.center()
+        bentoWindow = window
+        NSApp.activate()
+        window.makeKeyAndOrderFront(nil)
     }
 }
