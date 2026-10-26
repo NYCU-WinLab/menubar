@@ -16,7 +16,7 @@ enum SettingsWindow {
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @Environment(Updater.self) private var updater
-    @AppStorage(Pref.showTitleInMenuBar) private var showTitle = true
+    @AppStorage(Pref.menuBarText) private var menuBarText = MenuBarText.lyrics.rawValue
     @AppStorage(Pref.notify) private var notify = true
     @State private var key = ""
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
@@ -44,7 +44,9 @@ struct SettingsView: View {
             Section("一般") {
                 Toggle("登入時開啟", isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { _, on in setLaunchAtLogin(on) }
-                Toggle("選單列顯示歌名", isOn: $showTitle)
+                Picker("選單列顯示", selection: $menuBarText) {
+                    ForEach(MenuBarText.allCases) { Text($0.label).tag($0.rawValue) }
+                }
                 Toggle("通知公告、便當開單和週會提醒", isOn: $notify)
             }
 

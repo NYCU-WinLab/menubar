@@ -1720,5 +1720,94 @@
       "type" : "object"
     },
     "title" : "公告"
+  },
+  {
+    "app" : "music",
+    "description" : "Lyrics of a queued or played song to follow along (the page and the WinLab Mac app show them): timed lines (start second and text) when LRCLIB has them, else plain lines, else none.",
+    "hash" : "1c108c98a4be3a31",
+    "input" : {
+      "$schema" : "https://json-schema.org/draft/2020-12/schema",
+      "properties" : {
+        "videoId" : {
+          "pattern" : "^[\\w-]{11}$",
+          "type" : "string"
+        }
+      },
+      "required" : [
+        "videoId"
+      ],
+      "type" : "object"
+    },
+    "kind" : "query",
+    "name" : "get_lyrics",
+    "output" : {
+      "anyOf" : [
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "lines" : {
+              "items" : {
+                "additionalProperties" : false,
+                "properties" : {
+                  "atS" : {
+                    "type" : "null"
+                  },
+                  "text" : {
+                    "type" : "string"
+                  }
+                },
+                "required" : [
+                  "atS",
+                  "text"
+                ],
+                "type" : "object"
+              },
+              "type" : "array"
+            },
+            "timed" : {
+              "type" : "boolean"
+            }
+          },
+          "required" : [
+            "timed",
+            "lines"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "lines" : {
+              "items" : {
+                "additionalProperties" : false,
+                "properties" : {
+                  "atS" : {
+                    "type" : "number"
+                  },
+                  "text" : {
+                    "type" : "string"
+                  }
+                },
+                "required" : [
+                  "atS",
+                  "text"
+                ],
+                "type" : "object"
+              },
+              "type" : "array"
+            },
+            "timed" : {
+              "type" : "boolean"
+            }
+          },
+          "required" : [
+            "timed",
+            "lines"
+          ],
+          "type" : "object"
+        }
+      ]
+    },
+    "title" : "歌詞"
   }
 ]

@@ -35,11 +35,26 @@ final class StatusMenu: NSObject, NSMenuDelegate {
 
     // MARK: - Menu bar label
 
+    private var lyricTimer: Timer?
+    private var shownPlaying: Bool?
+
     private func trackLabel() {
         withObservationTracking {
             updateLabel()
         } onChange: { [weak self] in
             Task { @MainActor in self?.trackLabel() }
+        }
+        // Lyrics move with the clock, not with the model; Settings changes
+        // arrive through UserDefaults.
+        if lyricTimer == nil {
+            lyricTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
+                MainActor.assumeIsolated { self?.updateLabel() }
+            }
+            NotificationCenter.default.addObserver(
+                forName: UserDefaults.didChangeNotification, object: nil, queue: .main
+            ) { [weak self] _ in
+                MainActor.assumeIsolated { self?.updateLabel() }
+            }
         }
     }
 
@@ -47,17 +62,29 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         guard let button = item.button else { return }
         let music = model.music
         let playing = music?.current != nil && music?.paused == false && music?.state == .playing
-        let defaults = UserDefaults.standard
-        if playing {
-            button.image = NSImage(systemSymbolName: "music.note", accessibilityDescription: "播放中")
-        } else {
-            button.image = MenuBarLabel.mascot ?? NSImage(systemSymbolName: "antenna.radiowaves.left.and.right", accessibilityDescription: "WinLab")
+        if playing != shownPlaying {
+            shownPlaying = playing
+            button.image = playing
+                ? NSImage(systemSymbolName: "music.note", accessibilityDescription: "播放中")
+                : MenuBarLabel.mascot ?? NSImage(systemSymbolName: "antenna.radiowaves.left.and.right", accessibilityDescription: "WinLab")
         }
-        if playing, defaults.bool(forKey: Pref.showTitleInMenuBar), let title = music?.current?.track.title {
-            button.title = " " + MenuBarLabel.truncate(title, width: Pref.titleWidth)
-        } else {
-            button.title = ""
+        var text = ""
+        if playing, let title = music?.current?.track.title {
+            switch MenuBarText.current {
+            case .lyrics:
+                // The line being sung; the title until the first line and in gaps.
+                if let line = model.lyric(at: Date()).current {
+                    text = MenuBarLabel.truncate(line, width: Pref.lyricWidth)
+                } else {
+                    text = MenuBarLabel.truncate(title, width: Pref.titleWidth)
+                }
+            case .title: text = MenuBarLabel.truncate(title, width: Pref.titleWidth)
+            case .none: break
+            }
         }
+        let title = text.isEmpty ? "" : " " + text
+        if button.title != title { button.title = title }
+        _ = model.lyrics.count
     }
 
     // MARK: - NSMenuDelegate

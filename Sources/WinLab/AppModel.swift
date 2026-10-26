@@ -36,6 +36,9 @@ final class AppModel {
     private(set) var music: NowPlaying.Output?
     private(set) var musicFetchedAt = Date()
     private(set) var queue: [ListQueue.Output.Item] = []
+    /// Timed lyrics of the playing song, in order; empty when there are none.
+    private(set) var lyrics: [GetLyrics.Result.Line] = []
+    private var lyricsFor: String?
     private(set) var door: GetDoorStatus.Output?
     private(set) var meeting: GetNextLabMeeting.Output.Meeting?
     private(set) var myBookings: [ListMeetings.Output.Booking] = []
@@ -248,6 +251,36 @@ final class AppModel {
             self.musicFetchedAt = Date()
             self.queue = try await list.items
         }
+        await loadLyrics()
+    }
+
+    /// Lyrics follow the song: fetched once per song, kept only when timed.
+    private func loadLyrics() async {
+        guard let videoId = music?.current?.track.videoId else {
+            lyrics = []
+            lyricsFor = nil
+            return
+        }
+        guard videoId != lyricsFor else { return }
+        lyricsFor = videoId
+        lyrics = []
+        guard let result = try? await client.run(GetLyrics.self, .init(videoId: videoId)), result.timed,
+              music?.current?.track.videoId == videoId
+        else { return }
+        lyrics = result.lines.filter { $0.atS != nil }.sorted { ($0.atS ?? 0) < ($1.atS ?? 0) }
+    }
+
+    /// The line being sung and the one after it; nil before the first line
+    /// or in a gap (an empty line).
+    func lyric(at date: Date) -> (current: String?, next: String?) {
+        guard !lyrics.isEmpty else { return (nil, nil) }
+        let position = self.position(at: date)
+        guard let index = lyrics.lastIndex(where: { ($0.atS ?? 0) <= position }) else {
+            return (nil, lyrics.first?.text)
+        }
+        let current = lyrics[index].text.trimmingCharacters(in: .whitespaces)
+        let next = lyrics[(index + 1)...].first { !$0.text.trimmingCharacters(in: .whitespaces).isEmpty }?.text
+        return (current.isEmpty ? nil : current, next)
     }
 
     private func loadRooms() async {

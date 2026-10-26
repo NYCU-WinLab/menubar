@@ -35,6 +35,15 @@ import Testing
         }
     }
 
+    @Test func lyricsTimedAndPlain() throws {
+        let timed = #"{"timed":true,"lines":[{"atS":12.3,"text":"第一句"},{"atS":15,"text":""}]}"#
+        let a = try PortalClient.decoder.decode(GetLyrics.Output.self, from: Data(timed.utf8))
+        #expect(a.timed && a.lines.first?.atS == 12.3)
+        let plain = #"{"timed":false,"lines":[{"atS":null,"text":"沒有時間軸"}]}"#
+        let b = try PortalClient.decoder.decode(GetLyrics.Output.self, from: Data(plain.utf8))
+        #expect(!b.timed && b.lines.first?.atS == nil)
+    }
+
     @Test func inputsEncodeWithoutNils() throws {
         let data = try JSONEncoder().encode(ListBentoOrders.Input(limit: 5, status: .open))
         let object = try JSONSerialization.jsonObject(with: data) as? [String: Any]
@@ -68,7 +77,7 @@ import Testing
         let names = [
             Whoami.name, NowPlaying.name, ListQueue.name, SetPaused.name, SkipSong.name, SetVolume.name,
             GetDoorStatus.name, OpenDoor.name, GetNextLabMeeting.name, ListBentoOrders.name,
-            GetBentoOrder.name, AddBentoOrderItem.name, ListMeetings.name,
+            GetBentoOrder.name, AddBentoOrderItem.name, ListMeetings.name, GetLyrics.name,
             ListAnnouncements.name,
         ]
         #expect(Set(names) == Set(Contract.actions.keys))
