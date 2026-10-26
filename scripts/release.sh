@@ -2,10 +2,13 @@
 # Builds, signs, notarizes and publishes a WinLab release.
 #
 # Release Please creates a draft release and its tag when the release pull
-# request merges. Run this on a Mac whose login keychain holds:
-#   - the Developer ID Application identity,
-#   - the notarytool profile (xcrun notarytool store-credentials zyx-notary),
-#   - the Sparkle EdDSA key (generate_keys --account winlab-menubar).
+# request merges, and the publish job in release-please.yml runs this on a
+# macOS runner. It needs, from the environment or the keychain:
+#   - a Developer ID Application identity in the keychain,
+#   - notarization: ASC_KEY_PATH, ASC_KEY_ID and ASC_ISSUER_ID (an App Store
+#     Connect API key), or the notarytool profile NOTARY_PROFILE,
+#   - Sparkle: SPARKLE_KEY_FILE (the exported EdDSA key), or the key in the
+#     keychain under SPARKLE_ACCOUNT.
 #
 #   scripts/release.sh v0.1.0
 #
@@ -20,6 +23,16 @@ repo=NYCU-WinLab/menubar
 profile=${NOTARY_PROFILE:-zyx-notary}
 sparkle_account=${SPARKLE_ACCOUNT:-winlab-menubar}
 root="$(cd "$(dirname "$0")/.." && pwd)"
+if [ -n "${ASC_KEY_PATH:-}" ]; then
+  notary_auth=(--key "$ASC_KEY_PATH" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID")
+else
+  notary_auth=(--keychain-profile "$profile")
+fi
+if [ -n "${SPARKLE_KEY_FILE:-}" ]; then
+  sparkle_auth=(--ed-key-file "$SPARKLE_KEY_FILE")
+else
+  sparkle_auth=(--account "$sparkle_account")
+fi
 # Outside iCloud: extended attributes there break code signing.
 work=$(mktemp -d "${TMPDIR:-/tmp}/winlab-release.XXXXXX")
 trap 'git -C "$root" worktree remove --force "$work/src" 2>/dev/null || true; rm -rf "$work"' EXIT
@@ -34,11 +47,18 @@ fi
 git -C "$root" fetch --quiet --tags origin
 git -C "$root" worktree add --quiet --detach "$work/src" "$tag"
 cd "$work/src"
+# CI checked this commit against main before handing over the keys; build
+# that commit and nothing else.
+if [ -n "${EXPECT_SHA:-}" ] && [ "$(git rev-parse HEAD)" != "$EXPECT_SHA" ]; then
+  echo "$tag moved: expected $EXPECT_SHA, found $(git rev-parse HEAD)." >&2
+  exit 1
+fi
 if [ "$(cat version.txt)" != "$version" ]; then
   echo "version.txt says $(cat version.txt), the tag says $version." >&2
   exit 1
 fi
 # Share the SwiftPM cache with the main checkout so Sparkle's tools are there.
+mkdir -p "$root/.build"
 ln -s "$root/.build" .build
 scripts/bundle.sh
 app="$work/WinLab.app"
@@ -47,11 +67,11 @@ scripts/sign.sh "$app"
 
 notarize() {
   local result status id
-  result=$(xcrun notarytool submit "$1" --keychain-profile "$profile" --wait --output-format json)
+  result=$(xcrun notarytool submit "$1" "${notary_auth[@]}" --wait --output-format json)
   status=$(plutil -extract status raw -o - - <<<"$result")
   if [ "$status" != "Accepted" ]; then
     id=$(plutil -extract id raw -o - - <<<"$result")
-    xcrun notarytool log "$id" --keychain-profile "$profile" >&2
+    xcrun notarytool log "$id" "${notary_auth[@]}" >&2
     echo "Notarization of $1 finished with status $status." >&2
     exit 1
   fi
@@ -79,7 +99,7 @@ xcrun stapler staple "$dmg"
 spctl --assess --type open --context context:primary-signature --verbose=2 "$dmg"
 
 # The appcast: one item, signed with the Sparkle key.
-signature=$("$root/.build/artifacts/sparkle/Sparkle/bin/sign_update" --account "$sparkle_account" "$zip")
+signature=$("$root/.build/artifacts/sparkle/Sparkle/bin/sign_update" "${sparkle_auth[@]}" "$zip")
 build=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$app/Contents/Info.plist")
 minimum=$(/usr/libexec/PlistBuddy -c "Print :LSMinimumSystemVersion" "$app/Contents/Info.plist")
 # Built with printf: macOS bash 3.2 hangs on a command substitution inside a
@@ -107,5 +127,9 @@ xmllint --noout "$work/appcast.xml"
 
 (cd "$work" && shasum -a 256 "WinLab-$version.dmg" "WinLab-$version.zip" >SHA256SUMS)
 gh release upload "$tag" "$dmg" "$zip" "$work/appcast.xml" "$work/SHA256SUMS" --repo "$repo" --clobber
-gh release edit "$tag" --repo "$repo" --draft=false --latest
+# Latest only when no published release is newer (a rerun of an old tag
+# must not send new downloads back to it).
+newest=$( (gh release list --repo "$repo" --exclude-drafts --json tagName --jq '.[].tagName'; echo "$tag") | sort -V | tail -1)
+if [ "$newest" = "$tag" ]; then latest=--latest; else latest=--latest=false; fi
+gh release edit "$tag" --repo "$repo" --draft=false "$latest"
 echo "Published $tag: https://github.com/$repo/releases/tag/$tag"

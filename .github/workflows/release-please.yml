@@ -1,15 +1,24 @@
 name: release-please
 
-# Merging the release pull request is the release: Release Please tags
-# v<version> and creates a draft GitHub release. The app is signed and
-# notarized with a Developer ID and a Sparkle key that stay in the
-# maintainer's keychain, so scripts/release.sh builds it on a Mac, attaches
-# the DMG, the Sparkle zip and appcast.xml, then publishes the draft. Until
-# then the feed (releases/latest) still points at the previous release.
+# Merging the release pull request is the release. Release Please tags
+# v<version> and creates a draft release; the publish job then builds that
+# tag on a macOS runner, signs it with the Developer ID, notarizes it, makes
+# the DMG, the Sparkle zip and appcast.xml, attaches them and publishes the
+# draft. Installed copies find it through releases/latest within 6 hours.
+#
+# Secrets (environment `release`, which only main can use; never repository
+# secrets, which any branch could read):
+#   DEVELOPER_ID_P12, DEVELOPER_ID_P12_PASSWORD  the signing identity
+#   ASC_KEY_P8, ASC_KEY_ID, ASC_ISSUER_ID        App Store Connect API key, for notarization
+#   SPARKLE_ED_KEY                               the Sparkle EdDSA private key
 on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Publish this existing draft release again (e.g. v0.1.1)
+        required: false
 
 concurrency:
   group: release-please-${{ github.ref }}
@@ -17,11 +26,96 @@ concurrency:
 
 jobs:
   release-please:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       - uses: googleapis/release-please-action@v4
+        id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
+  publish:
+    needs: release-please
+    # A new release from Release Please, or a manual rerun for a tag.
+    if: >-
+      !cancelled() &&
+      ((needs.release-please.outputs.release_created == 'true') ||
+       (github.event_name == 'workflow_dispatch' && inputs.tag != ''))
+    runs-on: macos-26
+    environment: release
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ needs.release-please.outputs.tag_name || inputs.tag }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Before any key touches the runner: the tag must name a commit already
+      # on main (reviewed and merged), or a manual run could hand the keys to
+      # unmerged code.
+      - name: Verify the tag is a release of main
+        run: |
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Not a release tag: $TAG" >&2; exit 1
+          fi
+          git fetch --quiet origin main --tags
+          sha=$(git rev-parse --verify "refs/tags/$TAG^{commit}")
+          if ! git merge-base --is-ancestor "$sha" origin/main; then
+            echo "$TAG ($sha) is not on main." >&2; exit 1
+          fi
+          gh release view "$TAG" --json tagName >/dev/null
+          echo "RELEASE_SHA=$sha" >> "$GITHUB_ENV"
+
+      - name: Toolchain
+        run: sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+
+      - name: Signing identity in a throwaway keychain
+        env:
+          P12: ${{ secrets.DEVELOPER_ID_P12 }}
+          P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
+        run: |
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          password=$(openssl rand -base64 24)
+          printf '%s' "$P12" | base64 --decode > "$RUNNER_TEMP/identity.p12"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 7200 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          security import "$RUNNER_TEMP/identity.p12" -k "$keychain" -P "$P12_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$keychain" >/dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          rm "$RUNNER_TEMP/identity.p12"
+          security find-identity -v -p codesigning "$keychain" | grep -q "Developer ID Application"
+
+      - name: Notarization and Sparkle keys
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          SPARKLE_ED_KEY: ${{ secrets.SPARKLE_ED_KEY }}
+        run: |
+          umask 077
+          printf '%s' "$ASC_KEY_P8" | base64 --decode > "$RUNNER_TEMP/asc.p8"
+          printf '%s' "$SPARKLE_ED_KEY" > "$RUNNER_TEMP/sparkle.key"
+
+      - name: Build, sign, notarize, publish
+        env:
+          ASC_KEY_PATH: ${{ runner.temp }}/asc.p8
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          SPARKLE_KEY_FILE: ${{ runner.temp }}/sparkle.key
+          SIGN_IDENTITY: Developer ID Application
+          EXPECT_SHA: ${{ env.RELEASE_SHA }}
+        run: scripts/release.sh "$TAG"
+
+      - name: Remove keys
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/asc.p8" "$RUNNER_TEMP/sparkle.key" "$RUNNER_TEMP/identity.p12"
+          security delete-keychain "$RUNNER_TEMP/signing.keychain-db" 2>/dev/null || true
