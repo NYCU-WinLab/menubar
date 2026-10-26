@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/NYCU-WinLab/menubar/compare/v0.1.1...v0.2.0) (2026-10-26)
+
+
+### Features
+
+* settings on one page ([#8](https://github.com/NYCU-WinLab/menubar/issues/8)) ([c304680](https://github.com/NYCU-WinLab/menubar/commit/c30468041598eed37257af28cb6fca1635318b7a))
+
 ## [0.1.1](https://github.com/NYCU-WinLab/menubar/compare/v0.1.0...v0.1.1) (2026-10-26)
 
 
