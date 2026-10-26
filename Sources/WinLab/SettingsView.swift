@@ -216,7 +216,7 @@ private struct ShortcutsTab: View {
                     }
                 }
             } footer: {
-                Text("在任何 app 裡都能用。按下欄位後輸入組合鍵，要含 ⌘、⌥ 或 ⌃；按 ⌫ 清除，按 ⎋ 取消。")
+                Text("在任何 app 裡都能用。按下欄位後輸入組合鍵，要含 ⌘、⌥ 或 ⌃；F1 到 F20 可以單獨用。按 ⌫ 清除，按 ⎋ 取消。")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section {

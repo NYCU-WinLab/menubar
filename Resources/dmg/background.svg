@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="660" height="400" viewBox="0 0 660 400">
+  <!-- The DMG window content: 660 x 400 points. The icons sit at (180, 182)
+       and (480, 182): icons and names together are centered, also when
+       Finder shows its path bar. -->
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fbfbfa"/>
+      <stop offset="1" stop-color="#eeeeec"/>
+    </linearGradient>
+    <filter id="grain">
+      <feTurbulence baseFrequency="0.9" numOctaves="2" seed="3"/>
+      <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.05 0"/>
+    </filter>
+  </defs>
+  <rect width="660" height="400" fill="url(#paper)"/>
+  <rect width="660" height="400" filter="url(#grain)"/>
+  <path d="M 270 172 Q 330 136 390 172" fill="none" stroke="#0033a0" stroke-width="2"
+        stroke-linecap="round"/>
+  <path d="M 383.2 159.8 L 390 172 L 376.0 171.8" fill="none" stroke="#0033a0" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
