@@ -6,7 +6,8 @@ name: release-please
 # the DMG, the Sparkle zip and appcast.xml, attaches them and publishes the
 # draft. Installed copies find it through releases/latest within 6 hours.
 #
-# Secrets (repository, set once):
+# Secrets (environment `release`, which only main can use; never repository
+# secrets, which any branch could read):
 #   DEVELOPER_ID_P12, DEVELOPER_ID_P12_PASSWORD  the signing identity
 #   ASC_KEY_P8, ASC_KEY_ID, ASC_ISSUER_ID        App Store Connect API key, for notarization
 #   SPARKLE_ED_KEY                               the Sparkle EdDSA private key
@@ -43,7 +44,7 @@ jobs:
     needs: release-please
     # A new release from Release Please, or a manual rerun for a tag.
     if: >-
-      always() &&
+      !cancelled() &&
       ((needs.release-please.outputs.release_created == 'true') ||
        (github.event_name == 'workflow_dispatch' && inputs.tag != ''))
     runs-on: macos-26
@@ -86,7 +87,7 @@ jobs:
           password=$(openssl rand -base64 24)
           printf '%s' "$P12" | base64 --decode > "$RUNNER_TEMP/identity.p12"
           security create-keychain -p "$password" "$keychain"
-          security set-keychain-settings -lut 3600 "$keychain"
+          security set-keychain-settings -lut 7200 "$keychain"
           security unlock-keychain -p "$password" "$keychain"
           security import "$RUNNER_TEMP/identity.p12" -k "$keychain" -P "$P12_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$keychain" >/dev/null
@@ -116,5 +117,5 @@ jobs:
       - name: Remove keys
         if: always()
         run: |
-          rm -f "$RUNNER_TEMP/asc.p8" "$RUNNER_TEMP/sparkle.key"
+          rm -f "$RUNNER_TEMP/asc.p8" "$RUNNER_TEMP/sparkle.key" "$RUNNER_TEMP/identity.p12"
           security delete-keychain "$RUNNER_TEMP/signing.keychain-db" 2>/dev/null || true

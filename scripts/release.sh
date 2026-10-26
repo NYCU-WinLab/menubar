@@ -127,5 +127,9 @@ xmllint --noout "$work/appcast.xml"
 
 (cd "$work" && shasum -a 256 "WinLab-$version.dmg" "WinLab-$version.zip" >SHA256SUMS)
 gh release upload "$tag" "$dmg" "$zip" "$work/appcast.xml" "$work/SHA256SUMS" --repo "$repo" --clobber
-gh release edit "$tag" --repo "$repo" --draft=false --latest
+# Latest only when no published release is newer (a rerun of an old tag
+# must not send new downloads back to it).
+newest=$( (gh release list --repo "$repo" --exclude-drafts --json tagName --jq '.[].tagName'; echo "$tag") | sort -V | tail -1)
+if [ "$newest" = "$tag" ]; then latest=--latest; else latest=--latest=false; fi
+gh release edit "$tag" --repo "$repo" --draft=false "$latest"
 echo "Published $tag: https://github.com/$repo/releases/tag/$tag"
