@@ -1,4 +1,5 @@
 import AppKit
+import ServiceManagement
 import SwiftUI
 
 /// An AppKit app: the menu bar item is an NSStatusItem with an NSMenu, and
@@ -26,6 +27,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = Self.editMenu()
+        // Open at login by default, once; turning it off in Settings sticks.
+        if !UserDefaults.standard.bool(forKey: Pref.launchAtLoginOffered), Bundle.main.bundleURL.pathExtension == "app" {
+            try? SMAppService.mainApp.register()
+            UserDefaults.standard.set(true, forKey: Pref.launchAtLoginOffered)
+        }
         model.updater = updater
         model.notifier.requestPermission()
         model.start()

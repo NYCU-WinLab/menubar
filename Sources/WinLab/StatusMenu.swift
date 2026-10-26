@@ -54,7 +54,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
             button.image = MenuBarLabel.mascot ?? NSImage(systemSymbolName: "antenna.radiowaves.left.and.right", accessibilityDescription: "WinLab")
         }
         if playing, defaults.bool(forKey: Pref.showTitleInMenuBar), let title = music?.current?.track.title {
-            button.title = " " + MenuBarLabel.truncate(title, width: defaults.integer(forKey: Pref.menuBarTitleWidth))
+            button.title = " " + MenuBarLabel.truncate(title, width: Pref.titleWidth)
         } else {
             button.title = ""
         }
@@ -120,8 +120,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
             menu.addItem(.separator())
             menu.addItem(note("連線中…"))
         case .ok:
-            let enabled = MenuSection.enabled
-            for section in MenuSection.allCases where enabled.contains(section) {
+            for section in MenuSection.allCases {
                 let items = items(for: section)
                 // Dynamic sections leave the menu when they have nothing to say.
                 guard !items.isEmpty else { continue }
@@ -284,7 +283,6 @@ final class StatusMenu: NSObject, NSMenuDelegate {
             let window = NSWindow(contentViewController: controller)
             window.title = "WinLab 設定"
             window.styleMask = [.titled, .closable]
-            window.toolbarStyle = .preference
             window.isReleasedWhenClosed = false
             window.center()
             settingsWindow = window
