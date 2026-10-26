@@ -1,0 +1,38 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The bundle's build number is the commit count.
+          fetch-depth: 0
+      - name: Toolchain
+        run: |
+          sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+          swift --version
+      - name: Generated types match contract/portal.json
+        run: swift run ContractGen check
+      - run: swift build
+      - run: swift test
+      - name: Bundle (universal, unsigned)
+        run: |
+          scripts/bundle.sh
+          lipo -archs .build/dist/WinLab.app/Contents/MacOS/WinLab | grep -q "x86_64 arm64"
+          plutil -lint .build/dist/WinLab.app/Contents/Info.plist
+
+  pr-title:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conventional Commits title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: echo "$TITLE" | grep -Eq '^(feat|fix|perf|refactor|docs|ci|chore|test|build|revert)(\([a-z0-9-]+\))?!?: .+'
