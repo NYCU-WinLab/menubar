@@ -82,24 +82,27 @@ spctl --assess --type open --context context:primary-signature --verbose=2 "$dmg
 signature=$("$root/.build/artifacts/sparkle/Sparkle/bin/sign_update" --account "$sparkle_account" "$zip")
 build=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$app/Contents/Info.plist")
 minimum=$(/usr/libexec/PlistBuddy -c "Print :LSMinimumSystemVersion" "$app/Contents/Info.plist")
-cat >"$work/appcast.xml" <<XML
-<?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
-  <channel>
-    <title>WinLab</title>
-    <link>https://github.com/$repo/releases</link>
-    <item>
-      <title>WinLab $version</title>
-      <pubDate>$(LC_ALL=C date -u "+%a, %d %b %Y %H:%M:%S +0000")</pubDate>
-      <sparkle:version>$build</sparkle:version>
-      <sparkle:shortVersionString>$version</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>$minimum</sparkle:minimumSystemVersion>
-      <sparkle:fullReleaseNotesLink>https://github.com/$repo/releases/tag/$tag</sparkle:fullReleaseNotesLink>
-      <enclosure url="https://github.com/$repo/releases/download/$tag/WinLab-$version.zip" type="application/octet-stream" $signature/>
-    </item>
-  </channel>
-</rss>
-XML
+# Built with printf: macOS bash 3.2 hangs on a command substitution inside a
+# here-document.
+published=$(LC_ALL=C date -u "+%a, %d %b %Y %H:%M:%S +0000")
+{
+  printf '<?xml version="1.0" encoding="utf-8"?>\n'
+  printf '<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">\n'
+  printf '  <channel>\n'
+  printf '    <title>WinLab</title>\n'
+  printf '    <link>https://github.com/%s/releases</link>\n' "$repo"
+  printf '    <item>\n'
+  printf '      <title>WinLab %s</title>\n' "$version"
+  printf '      <pubDate>%s</pubDate>\n' "$published"
+  printf '      <sparkle:version>%s</sparkle:version>\n' "$build"
+  printf '      <sparkle:shortVersionString>%s</sparkle:shortVersionString>\n' "$version"
+  printf '      <sparkle:minimumSystemVersion>%s</sparkle:minimumSystemVersion>\n' "$minimum"
+  printf '      <sparkle:fullReleaseNotesLink>https://github.com/%s/releases/tag/%s</sparkle:fullReleaseNotesLink>\n' "$repo" "$tag"
+  printf '      <enclosure url="https://github.com/%s/releases/download/%s/WinLab-%s.zip" type="application/octet-stream" %s/>\n' "$repo" "$tag" "$version" "$signature"
+  printf '    </item>\n'
+  printf '  </channel>\n'
+  printf '</rss>\n'
+} >"$work/appcast.xml"
 xmllint --noout "$work/appcast.xml"
 
 (cd "$work" && shasum -a 256 "WinLab-$version.dmg" "WinLab-$version.zip" >SHA256SUMS)
