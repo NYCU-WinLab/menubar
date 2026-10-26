@@ -62,6 +62,8 @@ final class StatusMenu: NSObject, NSMenuDelegate {
 
     // MARK: - NSMenuDelegate
 
+    // MARK: - NSMenuDelegate
+
     func menuNeedsUpdate(_ menu: NSMenu) {
         rebuild()
     }
@@ -75,14 +77,14 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         isOpen = false
     }
 
-    /// While open, the menu follows the model (a song ends, the door goes
-    /// offline) like the system menus do.
+    /// While open, the menu follows the model (a song ends, an order opens)
+    /// like the system menus do.
     private func trackMenu() {
         guard isOpen else { return }
         withObservationTracking {
-            _ = (model.keyState, model.music?.current?.id, model.music?.paused, model.door, model.meeting,
-                 model.roomsToday, model.myBookings, model.bentoOrders, model.announcements, model.errors,
-                 model.queue.count, model.grantedApps, model.outdated, updater.available)
+            _ = (model.keyState, model.music?.current?.id, model.music?.paused, model.queue.count, model.door,
+                 model.meeting, model.myBookings, model.bentoOrders, model.bentoDetail.count, model.announcements,
+                 model.errors, model.grantedApps, model.outdated, updater.available)
         } onChange: { [weak self] in
             Task { @MainActor in
                 guard let self, self.isOpen else { return }
@@ -94,8 +96,10 @@ final class StatusMenu: NSObject, NSMenuDelegate {
 
     // MARK: - Building
 
-    /// Whether the music queue is unfolded, like Wi-Fi's Other Networks.
-    private var queueOpen = false
+    /// Songs listed under the controls.
+    private static let queueLimit = 3
+    /// Announcements newer than this show up.
+    private static let recentAnnouncement: TimeInterval = 7 * 86400
 
     private func rebuild() {
         menu.removeAllItems()
@@ -118,186 +122,137 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         case .ok:
             let enabled = MenuSection.enabled
             for section in MenuSection.allCases where enabled.contains(section) {
+                let items = items(for: section)
+                // Dynamic sections leave the menu when they have nothing to say.
+                guard !items.isEmpty else { continue }
                 menu.addItem(.separator())
                 menu.addItem(view(SectionTitleRow(title: section.title)))
-                if !model.grantedApps.contains(section.app) {
-                    menu.addItem(note("金鑰沒有開這個權限"))
-                } else if let error = model.errors[section] {
-                    menu.addItem(note(SectionView.friendly(error)))
-                } else {
-                    add(section)
-                }
+                items.forEach(menu.addItem)
             }
         }
         menu.addItem(.separator())
         // Plain items at the bottom, like "Wi-Fi Settings…".
-        let settings = ClosureMenuItem(title: "WinLab 設定…") { Self.openSettings() }
+        let settings = ClosureMenuItem(title: "設定…") { Self.openSettings() }
         settings.keyEquivalent = ","
         menu.addItem(settings)
-        let quit = ClosureMenuItem(title: "結束 WinLab") { NSApp.terminate(nil) }
+        let quit = ClosureMenuItem(title: "結束") { NSApp.terminate(nil) }
         quit.keyEquivalent = "q"
         menu.addItem(quit)
     }
 
-    private func add(_ section: MenuSection) {
+    private func items(for section: MenuSection) -> [NSMenuItem] {
+        guard model.grantedApps.contains(section.app) else {
+            // Music and the door are always there; say why they are empty.
+            return section == .music || section == .door ? [note("金鑰沒有開這個權限")] : []
+        }
+        if let error = model.errors[section] {
+            return section == .rooms || section == .bulletin ? [] : [note(SectionView.friendly(error))]
+        }
         switch section {
-        case .music: addMusic()
-        case .door: addDoor()
-        case .meeting: addMeeting()
-        case .rooms: addRooms()
-        case .bento: addBento()
-        case .bulletin: addBulletin()
+        case .music: return musicItems()
+        case .door: return doorItems()
+        case .meeting: return meetingItems()
+        case .rooms: return roomItems()
+        case .bento: return bentoItems()
+        case .bulletin: return bulletinItems()
         }
     }
 
-    private func addMusic() {
-        guard let music = model.music else {
-            menu.addItem(note("讀取中…"))
-            return
+    private func musicItems() -> [NSMenuItem] {
+        guard model.music != nil else { return [note("讀取中…")] }
+        var items = [view(NowPlayingRow()), view(MusicControlsRow())]
+        for song in model.queue.prefix(Self.queueLimit) {
+            items.append(view(QueueRow(title: song.track.title, detail: song.track.artist)))
         }
-        menu.addItem(view(NowPlayingRow()))
-        menu.addItem(view(VolumeRow()))
-        menu.addItem(row(
-            symbol: music.paused ? "play.fill" : "pause.fill", title: music.paused ? "繼續播放" : "暫停",
-            shortcut: .togglePause, closes: false
-        ) { [model] in Task { await model.togglePause() } })
-        menu.addItem(row(
-            symbol: "forward.fill", title: "下一首", enabled: music.current != nil, shortcut: .skip, closes: false
-        ) { [model] in Task { await model.skip() } })
-        if !model.queue.isEmpty {
-            menu.addItem(view(MenuRow(
-                title: "接下來 \(model.queue.count) 首",
-                action: { [weak self] in
-                    guard let self else { return }
-                    self.queueOpen.toggle()
-                    self.rebuild()
-                }
-            ) {
-                Image(systemName: "chevron.right")
-                    .rotationEffect(.degrees(queueOpen ? 90 : 0))
-            }))
-            if queueOpen {
-                for song in model.queue.prefix(10) {
-                    menu.addItem(view(MenuRow(
-                        symbol: "music.note", title: song.track.title,
-                        subtitle: [song.track.artist, song.addedBy.map { "\($0) 點的" }].compactMap { $0 }.joined(separator: "，")
-                    )))
-                }
-            }
+        if model.queue.count > Self.queueLimit {
+            items.append(view(QueueRow(title: "", detail: "還有 \(model.queue.count - Self.queueLimit) 首")))
         }
-        menu.addItem(row(symbol: "plus", title: "點歌") { [model] in model.openPortal("music") })
+        return items
     }
 
-    private func addDoor() {
+    private func doorItems() -> [NSMenuItem] {
         let door = model.door
         let online = door?.online == true
-        menu.addItem(row(
+        return [row(
             symbol: "door.left.hand.open", title: "開門",
             subtitle: online ? "門禁在線" : (door?.configured == false ? "門禁未設定" : "門禁離線"),
             enabled: online, shortcut: .openDoor
-        ) { [model] in Task { await model.openDoor() } })
+        ) { [model] in Task { await model.openDoor() } }]
     }
 
-    private func addMeeting() {
-        guard let meeting = model.meeting else {
-            menu.addItem(note("還沒排下一次週會"))
-            return
-        }
+    private func meetingItems() -> [NSMenuItem] {
+        guard let meeting = model.meeting else { return [note("還沒排下一次週會")] }
         if meeting.kind == .holiday {
-            menu.addItem(note("\(meeting.date) 放假\(meeting.holiday.map { "，\($0)" } ?? "")"))
-            return
+            return [note("\(meeting.date) 放假\(meeting.holiday.map { "，\($0)" } ?? "")")]
         }
         let when = model.meetingStart?.formatted(MeetingFormat.when) ?? "\(meeting.date) \(meeting.startsAt)"
         var detail: [String] = []
         if let presenter = meeting.presenter?.name { detail.append("\(presenter) 報告") }
         detail.append(meeting.location)
-        menu.addItem(row(symbol: "person.3.fill", title: when, subtitle: detail.joined(separator: "，")) { [model] in
+        var items = [row(symbol: "person.3.fill", title: when, subtitle: detail.joined(separator: "，")) { [model] in
             model.openPortal("meetings")
-        })
+        }]
         if let join = meeting.joinUrl.flatMap(URL.init(string:)) {
-            menu.addItem(row(symbol: "video.fill", title: "加入 Teams", active: true) { NSWorkspace.shared.open(join) })
+            items.append(row(symbol: "video.fill", title: "加入 Teams", active: true) { NSWorkspace.shared.open(join) })
         }
-        if let slides = meeting.slidesUrl.flatMap(URL.init(string:)) {
-            menu.addItem(row(symbol: "doc.richtext", title: "投影片") { NSWorkspace.shared.open(slides) })
-        }
+        return items
     }
 
-    private func addRooms() {
+    /// My meetings that have not ended, today through the next two days.
+    private func roomItems() -> [NSMenuItem] {
+        let today = AppModel.today()
         let now = AppModel.nowHHMM()
-        let runs = (model.roomsToday?.runs ?? []).filter { $0.end > now && $0.tier != .full }.prefix(4)
-        if runs.isEmpty { menu.addItem(note("今天沒有可借的時段了")) }
-        for run in runs {
-            let rooms: String = switch run.tier {
-            case .free: run.freeRooms.joined(separator: "、")
-            case .lab: "實驗室：" + run.labRooms.joined(separator: "、")
-            case .paid: "付費：" + run.paidRooms.joined(separator: "、")
-            case .full, .unknown: "都滿了"
-            }
-            menu.addItem(row(
-                symbol: "clock", title: "\(run.start) 到 \(run.end)", subtitle: rooms, active: run.tier == .free
-            ) { [model] in model.openPortal("meetings") })
-        }
-        for booking in model.myBookings.prefix(3) {
+        let upcoming = model.myBookings
+            .filter { $0.date > today || ($0.date == today && $0.endTime > now) }
+            .sorted { ($0.date, $0.startTime) < ($1.date, $1.startTime) }
+        return upcoming.prefix(3).map { booking in
             let join = booking.meeting?.joinUrl.flatMap(URL.init(string:))
-            menu.addItem(row(
+            let day = booking.date == today ? "今天" : String(booking.date.suffix(5))
+            return row(
                 symbol: join != nil ? "video.fill" : "calendar", title: booking.title,
-                subtitle: "\(booking.date.suffix(5)) \(booking.startTime)\(booking.room.map { "，\($0)" } ?? "")"
+                subtitle: "\(day) \(booking.startTime)\(booking.room.map { "，\($0)" } ?? "")",
+                active: join != nil
             ) { [model] in
                 if let join { NSWorkspace.shared.open(join) } else { model.openPortal("meetings") }
-            })
-        }
-        menu.addItem(row(symbol: "plus", title: "借會議室") { [model] in model.openPortal("meetings") })
-    }
-
-    private func addBento() {
-        if model.bentoOrders.isEmpty {
-            menu.addItem(note("目前沒有開單"))
-            return
-        }
-        for order in model.bentoOrders {
-            let mine = model.myLines(in: order.id)
-            let detail = mine.isEmpty
-                ? "\(Int(order.people)) 人點了 \(Int(order.dishes)) 份"
-                : "我點了 \(mine.map(\.name).joined(separator: "、"))"
-            menu.addItem(row(
-                symbol: "takeoutbag.and.cup.and.straw.fill", title: order.restaurant, subtitle: detail,
-                active: !mine.isEmpty, enabled: model.bentoDetail[order.id] != nil
-            ) { [weak self] in self?.openBento?(order.id) })
+            }
         }
     }
 
-    private func addBulletin() {
-        if model.announcements.isEmpty {
-            menu.addItem(note("沒有公告"))
-            return
-        }
-        for a in model.announcements.prefix(3) {
-            menu.addItem(row(
+    /// Open orders I have not ordered from yet.
+    private func bentoItems() -> [NSMenuItem] {
+        model.bentoOrders
+            .filter { model.bentoDetail[$0.id] != nil && model.myLines(in: $0.id).isEmpty }
+            .map { order in
+                row(
+                    symbol: "takeoutbag.and.cup.and.straw.fill", title: order.restaurant,
+                    subtitle: "\(Int(order.people)) 人點了，按一下點餐", active: true
+                ) { [weak self] in self?.openBento?(order.id) }
+            }
+    }
+
+    private func bulletinItems() -> [NSMenuItem] {
+        let since = Date().addingTimeInterval(-Self.recentAnnouncement)
+        return model.announcements.filter { $0.createdAt > since }.prefix(3).map { a in
+            row(
                 symbol: "megaphone.fill", title: a.title,
                 subtitle: [a.author, a.createdAt.formatted(.relative(presentation: .named))].compactMap { $0 }.joined(separator: "，")
-            ) { [model] in model.openPortal("bulletin") })
+            ) { [model] in model.openPortal("bulletin") }
         }
     }
 
     // MARK: - Items
 
-    /// A MenuRow. Choosing it closes the menu first, unless closes is false
-    /// (pause and skip keep it open, as the system Now Playing does).
+    /// A MenuRow that runs `run` when chosen; the menu closes first.
     private func row(
         symbol: String, title: String, subtitle: String? = nil, active: Bool = false, enabled: Bool = true,
-        shortcut: HotkeyAction? = nil, closes: Bool = true, _ run: @escaping @MainActor () -> Void
+        shortcut: HotkeyAction? = nil, _ run: @escaping @MainActor () -> Void
     ) -> NSMenuItem {
-        let menu = self.menu
         let keys = shortcut.flatMap { Hotkeys.shared.shortcuts[$0]?.display }
-        return view(MenuRow(
-            symbol: symbol, title: title, subtitle: subtitle, active: active, enabled: enabled,
-            action: {
-                if closes { menu.cancelTracking() }
-                run()
-            }
-        ) {
+        let item = view(MenuRow(symbol: symbol, title: title, subtitle: subtitle, active: active, enabled: enabled) {
             if let keys { Text(keys) }
-        })
+        }, action: enabled ? run : nil)
+        item.isEnabled = enabled
+        return item
     }
 
     /// A line of secondary text, at the row inset.
@@ -311,17 +266,75 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         )
     }
 
-    private func view(_ content: some View) -> NSMenuItem {
+    private func view(_ content: some View, action: (@MainActor () -> Void)? = nil) -> NSMenuItem {
         let item = NSMenuItem()
-        let host = NSHostingView(rootView: content.environment(model).environment(updater))
-        host.frame.size = host.fittingSize
-        item.view = host
+        item.view = MenuItemView(content.environment(model).environment(updater), action: action)
         return item
     }
 
+    // MARK: - Settings
+
+    private static var settingsWindow: NSWindow?
+    static var makeSettings: (() -> NSViewController)?
+
+    /// Our own window: a menu bar app has no Settings menu to route
+    /// showSettingsWindow: through.
     static func openSettings() {
+        if settingsWindow == nil, let controller = makeSettings?() {
+            let window = NSWindow(contentViewController: controller)
+            window.title = "WinLab 設定"
+            window.styleMask = [.titled, .closable]
+            window.isReleasedWhenClosed = false
+            window.center()
+            settingsWindow = window
+        }
         NSApp.activate()
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        settingsWindow?.makeKeyAndOrderFront(nil)
+    }
+}
+
+/// Hosts a SwiftUI row in the menu. Rows with an action draw the menu's own
+/// highlight (a rounded fill, inset like the system menus) and run the
+/// action on click; rows without one pass events to their controls.
+@MainActor
+final class MenuItemView: NSView {
+    private let action: (@MainActor () -> Void)?
+
+    init(_ content: some View, action: (@MainActor () -> Void)?) {
+        self.action = action
+        let host = NSHostingView(rootView: content)
+        let size = host.fittingSize
+        super.init(frame: NSRect(origin: .zero, size: size))
+        host.frame = bounds
+        host.autoresizingMask = [.width, .height]
+        addSubview(host)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func draw(_ dirtyRect: NSRect) {
+        guard action != nil, enclosingMenuItem?.isHighlighted == true, enclosingMenuItem?.isEnabled == true else { return }
+        let rect = bounds.insetBy(dx: MenuMetrics.highlightInset, dy: 0)
+        NSColor.labelColor.withAlphaComponent(0.1).setFill()
+        NSBezierPath(roundedRect: rect, xRadius: 8, yRadius: 8).fill()
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        needsDisplay = true
+    }
+
+    /// Action rows take the click themselves; control rows let it through.
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        guard action != nil else { return super.hitTest(point) }
+        return frame.contains(point) ? self : nil
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        guard let action, enclosingMenuItem?.isEnabled == true else { return }
+        enclosingMenuItem?.menu?.cancelTracking()
+        action()
     }
 }
 

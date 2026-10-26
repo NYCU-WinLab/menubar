@@ -54,7 +54,8 @@ struct SectionTitleRow: View {
 }
 
 /// A row with a round icon, a title, an optional subtitle and trailing
-/// detail, highlighted on hover like the rows of the Wi-Fi menu.
+/// detail, like the rows of the Wi-Fi menu. MenuItemView draws its hover
+/// highlight from the menu's own highlight state and handles the click.
 struct MenuRow<Trailing: View>: View {
     var symbol: String?
     let title: String
@@ -62,9 +63,7 @@ struct MenuRow<Trailing: View>: View {
     /// Fills the icon circle with the accent color (the joined network).
     var active = false
     var enabled = true
-    var action: (() -> Void)?
     @ViewBuilder var trailing: Trailing
-    @State private var hover = false
 
     var body: some View {
         HStack(spacing: MenuMetrics.gap) {
@@ -95,26 +94,80 @@ struct MenuRow<Trailing: View>: View {
         .padding(.horizontal, MenuMetrics.inset)
         .frame(width: MenuMetrics.width, alignment: .leading)
         .frame(minHeight: subtitle == nil ? MenuMetrics.rowHeight : 40)
-        .background {
-            if hover, enabled, action != nil {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(.fill.tertiary)
-                    .padding(.horizontal, MenuMetrics.highlightInset)
-            }
-        }
-        .contentShape(.rect)
-        .onHover { hover = $0 }
-        .onTapGesture {
-            if enabled { action?() }
-        }
     }
 }
 
 extension MenuRow where Trailing == EmptyView {
-    init(symbol: String? = nil, title: String, subtitle: String? = nil, active: Bool = false,
-         enabled: Bool = true, action: (() -> Void)? = nil) {
-        self.init(symbol: symbol, title: title, subtitle: subtitle, active: active, enabled: enabled,
-                  action: action, trailing: { EmptyView() })
+    init(symbol: String? = nil, title: String, subtitle: String? = nil, active: Bool = false, enabled: Bool = true) {
+        self.init(symbol: symbol, title: title, subtitle: subtitle, active: active, enabled: enabled, trailing: { EmptyView() })
+    }
+}
+
+/// Pause, next, volume and request a song, in one row.
+struct MusicControlsRow: View {
+    @Environment(AppModel.self) private var model
+    @State private var volume: Double?
+
+    var body: some View {
+        let music = model.music
+        HStack(spacing: 8) {
+            control(music?.paused == true ? "play.fill" : "pause.fill", help: music?.paused == true ? "繼續" : "暫停", shortcut: .togglePause) {
+                Task { await model.togglePause() }
+            }
+            control("forward.fill", help: "下一首", shortcut: .skip) {
+                Task { await model.skip() }
+            }
+            .disabled(music?.current == nil)
+            Image(systemName: "speaker.fill")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .padding(.leading, 2)
+            Slider(
+                value: Binding(get: { volume ?? music?.volume ?? 0 }, set: { volume = $0 }),
+                in: 0 ... 100
+            ) { editing in
+                guard !editing, let v = volume else { return }
+                Task {
+                    await model.setVolume(Int(v.rounded()))
+                    volume = nil
+                }
+            }
+            .controlSize(.small)
+            .help("音量 \(Int((volume ?? music?.volume ?? 0).rounded()))")
+            control("plus", help: "點歌") { model.openPortal("music") }
+        }
+        .padding(.horizontal, MenuMetrics.inset)
+        .frame(width: MenuMetrics.width, height: MenuMetrics.rowHeight + 4)
+    }
+
+    private func control(_ symbol: String, help: String, shortcut: HotkeyAction? = nil, _ run: @escaping () -> Void) -> some View {
+        let keys = shortcut.flatMap { Hotkeys.shared.shortcuts[$0]?.display }
+        return Button(action: run) {
+            Image(systemName: symbol)
+                .font(.system(size: 12, weight: .semibold))
+                .frame(width: MenuMetrics.icon, height: MenuMetrics.icon)
+                .background(.fill.secondary, in: .circle)
+                .contentShape(.circle)
+        }
+        .buttonStyle(.plain)
+        .help(keys.map { "\(help)（\($0)）" } ?? help)
+    }
+}
+
+/// The next songs, as quiet lines under the controls.
+struct QueueRow: View {
+    let title: String
+    let detail: String
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(title).lineLimit(1)
+            Text(detail).foregroundStyle(.secondary).lineLimit(1)
+            Spacer(minLength: 0)
+        }
+        .font(.system(size: 12))
+        .padding(.horizontal, MenuMetrics.inset)
+        .frame(width: MenuMetrics.width, height: 22, alignment: .leading)
     }
 }
 
@@ -178,33 +231,6 @@ struct NowPlayingRow: View {
     /// YouTube Music thumbnails come at 60 px; ask for 120 for Retina.
     static func larger(_ url: URL) -> URL {
         URL(string: url.absoluteString.replacingOccurrences(of: "=w60-h60", with: "=w120-h120")) ?? url
-    }
-}
-
-/// The lab volume, drawn like the slider in the system Sound menu.
-struct VolumeRow: View {
-    @Environment(AppModel.self) private var model
-    @State private var volume: Double?
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "speaker.fill")
-            Slider(
-                value: Binding(get: { volume ?? model.music?.volume ?? 0 }, set: { volume = $0 }),
-                in: 0 ... 100
-            ) { editing in
-                guard !editing, let v = volume else { return }
-                Task {
-                    await model.setVolume(Int(v.rounded()))
-                    volume = nil
-                }
-            }
-            Image(systemName: "speaker.wave.3.fill")
-        }
-        .foregroundStyle(.secondary)
-        .padding(.horizontal, MenuMetrics.inset)
-        .frame(width: MenuMetrics.width, height: MenuMetrics.rowHeight)
-        .help("音量 \(Int((volume ?? model.music?.volume ?? 0).rounded()))")
     }
 }
 

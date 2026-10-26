@@ -26,6 +26,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.updater = updater
         model.notifier.requestPermission()
         model.start()
+        StatusMenu.makeSettings = { [model, updater] in
+            NSHostingController(rootView: SettingsView().environment(model).environment(updater))
+        }
         let menu = StatusMenu(model: model, updater: updater)
         menu.openBento = { [weak self] id in self?.openBento(id) }
         statusMenu = menu

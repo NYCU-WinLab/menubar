@@ -68,7 +68,7 @@ import Testing
         let names = [
             Whoami.name, NowPlaying.name, ListQueue.name, SetPaused.name, SkipSong.name, SetVolume.name,
             GetDoorStatus.name, OpenDoor.name, GetNextLabMeeting.name, ListBentoOrders.name,
-            GetBentoOrder.name, AddBentoOrderItem.name, ListRoomAvailability.name, ListMeetings.name,
+            GetBentoOrder.name, AddBentoOrderItem.name, ListMeetings.name,
             ListAnnouncements.name,
         ]
         #expect(Set(names) == Set(Contract.actions.keys))

@@ -13,7 +13,6 @@ public enum Contract {
         "list_bento_orders": (app: "bento", hash: "0f6c95bc5e889291"),
         "list_meetings": (app: "meetings", hash: "d4461988d509dc1a"),
         "list_queue": (app: "music", hash: "a5039ab7e5d35e35"),
-        "list_room_availability": (app: "meetings", hash: "09d88cae8e882234"),
         "now_playing": (app: "music", hash: "5d386b4666d36c33"),
         "open_door": (app: "door", hash: "39f3462bb92b4c7e"),
         "set_paused": (app: "music", hash: "2f8a351cf9e80968"),
@@ -482,76 +481,6 @@ public enum ListQueue: PortalAction {
                 public var thumbnail: String?
                 public var title: String
                 public var videoId: String
-            }
-        }
-    }
-}
-
-/// 教室空檔
-public enum ListRoomAvailability: PortalAction {
-    public static let name = "list_room_availability"
-    public static let app = "meetings"
-    public static let hash = "09d88cae8e882234"
-
-    public struct Input: Encodable, Sendable, Equatable {
-        public var date: String?
-        public var days: Int?
-        public var merge: Bool?
-
-        public init(date: String? = nil, days: Int? = nil, merge: Bool? = nil) {
-            self.date = date
-            self.days = days
-            self.merge = merge
-        }
-    }
-
-    public struct Output: Decodable, Sendable, Equatable {
-        public var days: [Day]
-
-        public struct Day: Decodable, Sendable, Equatable {
-            public var date: String
-            public var labBookings: [LabBooking]
-            public var runs: [Run]?
-            public var slots: [Slot]?
-
-            public struct LabBooking: Decodable, Sendable, Equatable {
-                public var endTime: String
-                public var id: String
-                public var requestedBy: String
-                public var requestedByName: String
-                public var room: String?
-                public var startTime: String
-                public var title: String
-            }
-
-            public struct Run: Decodable, Sendable, Equatable {
-                public var end: String
-                public var freeRooms: [String]
-                public var labRooms: [String]
-                public var paidRooms: [String]
-                public var start: String
-                public var tier: Tier
-
-                public enum Tier: String, Decodable, Sendable, Equatable {
-                    case free
-                    case full
-                    case lab
-                    case paid
-                    case unknown
-
-                    public init(from decoder: any Decoder) throws {
-                        let raw = try decoder.singleValueContainer().decode(String.self)
-                        self = Self(rawValue: raw) ?? .unknown
-                    }
-                }
-            }
-
-            public struct Slot: Decodable, Sendable, Equatable {
-                public var end: String
-                public var freeRooms: [String]
-                public var labRooms: [String]
-                public var paidRooms: [String]
-                public var start: String
             }
         }
     }
