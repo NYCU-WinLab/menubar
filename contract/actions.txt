@@ -1,0 +1,18 @@
+# Portal actions this app calls. scripts/sync-contract.sh keeps their
+# schemas from portal's contract/actions.json in contract/portal.json and
+# regenerates Sources/PortalKit/Generated.swift from them.
+whoami
+now_playing
+list_queue
+set_paused
+skip_song
+set_volume
+get_door_status
+open_door
+get_next_lab_meeting
+list_bento_orders
+get_bento_order
+add_bento_order_item
+list_room_availability
+list_meetings
+list_announcements

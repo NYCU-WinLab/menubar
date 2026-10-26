@@ -1,0 +1,1978 @@
+[
+  {
+    "app" : "profile",
+    "description" : "The signed-in member: id, name (Chinese name from Keycloak), email and lab account username. Call it first to know who you act as.",
+    "hash" : "b0123cb6486a2ffa",
+    "input" : {
+      "$schema" : "https://json-schema.org/draft/2020-12/schema",
+      "properties" : {
+
+      },
+      "type" : "object"
+    },
+    "kind" : "query",
+    "name" : "whoami",
+    "output" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "email" : {
+          "type" : "string"
+        },
+        "id" : {
+          "type" : "string"
+        },
+        "name" : {
+          "type" : "string"
+        },
+        "username" : {
+          "anyOf" : [
+            {
+              "type" : "null"
+            },
+            {
+              "type" : "string"
+            }
+          ]
+        }
+      },
+      "required" : [
+        "id",
+        "name",
+        "email",
+        "username"
+      ],
+      "type" : "object"
+    },
+    "title" : "我是誰"
+  },
+  {
+    "app" : "music",
+    "description" : "The song playing on the lab HomePod: title, artist, who added it and how (queue, next or cut_in), position in seconds, paused, volume (0-100), autoplay (recommend a song when the queue runs dry) and whether the player on the lab network is online.",
+    "hash" : "5d386b4666d36c33",
+    "input" : {
+      "$schema" : "https://json-schema.org/draft/2020-12/schema",
+      "properties" : {
+
+      },
+      "type" : "object"
+    },
+    "kind" : "query",
+    "name" : "now_playing",
+    "output" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "autoplay" : {
+          "type" : "boolean"
+        },
+        "current" : {
+          "anyOf" : [
+            {
+              "additionalProperties" : false,
+              "properties" : {
+                "addedAs" : {
+                  "enum" : [
+                    "auto",
+                    "cut_in",
+                    "next",
+                    "queue"
+                  ],
+                  "type" : "string"
+                },
+                "addedBy" : {
+                  "anyOf" : [
+                    {
+                      "type" : "null"
+                    },
+                    {
+                      "type" : "string"
+                    }
+                  ]
+                },
+                "endedAt" : {
+                  "anyOf" : [
+                    {
+                      "format" : "date-time",
+                      "type" : "string"
+                    },
+                    {
+                      "type" : "null"
+                    }
+                  ]
+                },
+                "endedBy" : {
+                  "anyOf" : [
+                    {
+                      "type" : "null"
+                    },
+                    {
+                      "type" : "string"
+                    }
+                  ]
+                },
+                "fromPlaylist" : {
+                  "type" : "boolean"
+                },
+                "id" : {
+                  "type" : "string"
+                },
+                "startedAt" : {
+                  "anyOf" : [
+                    {
+                      "format" : "date-time",
+                      "type" : "string"
+                    },
+                    {
+                      "type" : "null"
+                    }
+                  ]
+                },
+                "status" : {
+                  "enum" : [
+                    "done",
+                    "playing",
+                    "queued",
+                    "removed",
+                    "skipped"
+                  ],
+                  "type" : "string"
+                },
+                "track" : {
+                  "additionalProperties" : false,
+                  "properties" : {
+                    "artist" : {
+                      "type" : "string"
+                    },
+                    "createdAt" : {
+                      "format" : "date-time",
+                      "type" : "string"
+                    },
+                    "durationS" : {
+                      "anyOf" : [
+                        {
+                          "type" : "null"
+                        },
+                        {
+                          "type" : "number"
+                        }
+                      ]
+                    },
+                    "thumbnail" : {
+                      "anyOf" : [
+                        {
+                          "type" : "null"
+                        },
+                        {
+                          "type" : "string"
+                        }
+                      ]
+                    },
+                    "title" : {
+                      "type" : "string"
+                    },
+                    "videoId" : {
+                      "type" : "string"
+                    }
+                  },
+                  "required" : [
+                    "videoId",
+                    "title",
+                    "artist",
+                    "durationS",
+                    "thumbnail",
+                    "createdAt"
+                  ],
+                  "type" : "object"
+                }
+              },
+              "required" : [
+                "id",
+                "status",
+                "addedAs",
+                "fromPlaylist",
+                "track",
+                "addedBy",
+                "endedBy",
+                "startedAt",
+                "endedAt"
+              ],
+              "type" : "object"
+            },
+            {
+              "type" : "null"
+            }
+          ]
+        },
+        "error" : {
+          "anyOf" : [
+            {
+              "type" : "null"
+            },
+            {
+              "type" : "string"
+            }
+          ]
+        },
+        "online" : {
+          "type" : "boolean"
+        },
+        "paused" : {
+          "type" : "boolean"
+        },
+        "positionS" : {
+          "type" : "number"
+        },
+        "state" : {
+          "enum" : [
+            "error",
+            "idle",
+            "loading",
+            "playing",
+            "waiting"
+          ],
+          "type" : "string"
+        },
+        "volume" : {
+          "type" : "number"
+        }
+      },
+      "required" : [
+        "current",
+        "paused",
+        "volume",
+        "autoplay",
+        "positionS",
+        "state",
+        "error",
+        "online"
+      ],
+      "type" : "object"
+    },
+    "title" : "正在播放"
+  },
+  {
+    "app" : "music",
+    "description" : "Songs waiting to play, in order, each with who added it and how (queue, next, cut_in). The playing song is not included; see now_playing.",
+    "hash" : "a5039ab7e5d35e35",
+    "input" : {
+      "$schema" : "https://json-schema.org/draft/2020-12/schema",
+      "properties" : {
+
+      },
+      "type" : "object"
+    },
+    "kind" : "query",
+    "name" : "list_queue",
+    "output" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "items" : {
+          "items" : {
+            "additionalProperties" : false,
+            "properties" : {
+              "addedAs" : {
+                "enum" : [
+                  "auto",
+                  "cut_in",
+                  "next",
+                  "queue"
+                ],
+                "type" : "string"
+              },
+              "addedBy" : {
+                "anyOf" : [
+                  {
+                    "type" : "null"
+                  },
+                  {
+                    "type" : "string"
+                  }
+                ]
+              },
+              "endedAt" : {
+                "anyOf" : [
+                  {
+                    "format" : "date-time",
+                    "type" : "string"
+                  },
+                  {
+                    "type" : "null"
+                  }
+                ]
+              },
+              "endedBy" : {
+                "anyOf" : [
+                  {
+                    "type" : "null"
+                  },
+                  {
+                    "type" : "string"
+                  }
+                ]
+              },
+              "fromPlaylist" : {
+                "type" : "boolean"
+              },
+              "id" : {
+                "type" : "string"
+              },
+              "startedAt" : {
+                "anyOf" : [
+                  {
+                    "format" : "date-time",
+                    "type" : "string"
+                  },
+                  {
+                    "type" : "null"
+                  }
+                ]
+              },
+              "status" : {
+                "enum" : [
+                  "done",
+                  "playing",
+                  "queued",
+                  "removed",
+                  "skipped"
+                ],
+                "type" : "string"
+              },
+              "track" : {
+                "additionalProperties" : false,
+                "properties" : {
+                  "artist" : {
+                    "type" : "string"
+                  },
+                  "createdAt" : {
+                    "format" : "date-time",
+                    "type" : "string"
+                  },
+                  "durationS" : {
+                    "anyOf" : [
+                      {
+                        "type" : "null"
+                      },
+                      {
+                        "type" : "number"
+                      }
+                    ]
+                  },
+                  "thumbnail" : {
+                    "anyOf" : [
+                      {
+                        "type" : "null"
+                      },
+                      {
+                        "type" : "string"
+                      }
+                    ]
+                  },
+                  "title" : {
+                    "type" : "string"
+                  },
+                  "videoId" : {
+                    "type" : "string"
+                  }
+                },
+                "required" : [
+                  "videoId",
+                  "title",
+                  "artist",
+                  "durationS",
+                  "thumbnail",
+                  "createdAt"
+                ],
+                "type" : "object"
+              }
+            },
+            "required" : [
+              "id",
+              "status",
+              "addedAs",
+              "fromPlaylist",
+              "track",
+              "addedBy",
+              "endedBy",
+              "startedAt",
+              "endedAt"
+            ],
+            "type" : "object"
+          },
+          "type" : "array"
+        }
+      },
+      "required" : [
+        "items"
+      ],
+      "type" : "object"
+    },
+    "title" : "播放佇列"
+  },
+  {
+    "app" : "music",
+    "description" : "Pause (paused=true) or resume (paused=false) the music on the lab HomePod. Resuming continues the song where it stopped.",
+    "hash" : "2f8a351cf9e80968",
+    "input" : {
+      "$schema" : "https://json-schema.org/draft/2020-12/schema",
+      "properties" : {
+        "paused" : {
+          "type" : "boolean"
+        }
+      },
+      "required" : [
+        "paused"
+      ],
+      "type" : "object"
+    },
+    "kind" : "mutation",
+    "name" : "set_paused",
+    "output" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "paused" : {
+          "type" : "boolean"
+        }
+      },
+      "required" : [
+        "paused"
+      ],
+      "type" : "object"
+    },
+    "title" : "暫停或繼續"
+  },
+  {
+    "app" : "music",
+    "description" : "Skip the playing song; the next waiting song starts. Pass the playing item's id so a late click cannot skip the song after it.",
+    "hash" : "829d667b164a18fa",
+    "input" : {
+      "$schema" : "https://json-schema.org/draft/2020-12/schema",
+      "properties" : {
+        "itemId" : {
+          "format" : "uuid",
+          "pattern" : "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+          "type" : "string"
+        }
+      },
+      "required" : [
+        "itemId"
+      ],
+      "type" : "object"
+    },
+    "kind" : "mutation",
+    "name" : "skip_song",
+    "output" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "ok" : {
+          "type" : "boolean"
+        }
+      },
+      "required" : [
+        "ok"
+      ],
+      "type" : "object"
+    },
+    "title" : "跳過"
+  },
+  {
+    "app" : "music",
+    "description" : "Set the lab HomePod's volume for the music, 0 to 100.",
+    "hash" : "279ef375311d7981",
+    "input" : {
+      "$schema" : "https://json-schema.org/draft/2020-12/schema",
+      "properties" : {
+        "volume" : {
+          "maximum" : 100,
+          "minimum" : 0,
+          "type" : "integer"
+        }
+      },
+      "required" : [
+        "volume"
+      ],
+      "type" : "object"
+    },
+    "kind" : "mutation",
+    "name" : "set_volume",
+    "output" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "volume" : {
+          "type" : "number"
+        }
+      },
+      "required" : [
+        "volume"
+      ],
+      "type" : "object"
+    },
+    "title" : "調音量"
+  },
+  {
+    "app" : "door",
+    "description" : "Whether the lab door relay is configured and answering, so open_door can work. Any member.",
+    "hash" : "5104c2a84fcdfd13",
+    "input" : {
+      "$schema" : "https://json-schema.org/draft/2020-12/schema",
+      "properties" : {
+
+      },
+      "type" : "object"
+    },
+    "kind" : "query",
+    "name" : "get_door_status",
+    "output" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "configured" : {
+          "type" : "boolean"
+        },
+        "online" : {
+          "type" : "boolean"
+        }
+      },
+      "required" : [
+        "configured",
+        "online"
+      ],
+      "type" : "object"
+    },
+    "title" : "門禁狀態"
+  },
+  {
+    "app" : "door",
+    "description" : "Unlocks the lab door (EC 4F) for a few seconds, as the member pressing /door. It physically opens the door: call it only when the member asks to open it now. Any member; every attempt is logged under their name. A failure does not prove the door stayed shut.",
+    "hash" : "39f3462bb92b4c7e",
+    "input" : {
+      "$schema" : "https://json-schema.org/draft/2020-12/schema",
+      "properties" : {
+
+      },
+      "type" : "object"
+    },
+    "kind" : "mutation",
+    "name" : "open_door",
+    "output" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "opened" : {
+          "type" : "boolean"
+        }
+      },
+      "required" : [
+        "opened"
+      ],
+      "type" : "object"
+    },
+    "title" : "開門"
+  },
+  {
+    "app" : "meetings",
+    "description" : "The next Monday lab meeting that is not a holiday, from today in Taipei: date, presenter, paper or title, place, start time and questioners. null when nothing is scheduled.",
+    "hash" : "b1fd95b2454c78fa",
+    "input" : {
+      "$schema" : "https://json-schema.org/draft/2020-12/schema",
+      "properties" : {
+
+      },
+      "type" : "object"
+    },
+    "kind" : "query",
+    "name" : "get_next_lab_meeting",
+    "output" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "meeting" : {
+          "anyOf" : [
+            {
+              "additionalProperties" : false,
+              "properties" : {
+                "date" : {
+                  "type" : "string"
+                },
+                "holiday" : {
+                  "anyOf" : [
+                    {
+                      "type" : "null"
+                    },
+                    {
+                      "type" : "string"
+                    }
+                  ]
+                },
+                "id" : {
+                  "type" : "string"
+                },
+                "joinUrl" : {
+                  "anyOf" : [
+                    {
+                      "type" : "null"
+                    },
+                    {
+                      "type" : "string"
+                    }
+                  ]
+                },
+                "kind" : {
+                  "enum" : [
+                    "holiday",
+                    "regular",
+                    "speaker",
+                    "thesis"
+                  ],
+                  "type" : "string"
+                },
+                "label" : {
+                  "anyOf" : [
+                    {
+                      "type" : "null"
+                    },
+                    {
+                      "type" : "string"
+                    }
+                  ]
+                },
+                "location" : {
+                  "type" : "string"
+                },
+                "notes" : {
+                  "anyOf" : [
+                    {
+                      "type" : "null"
+                    },
+                    {
+                      "type" : "string"
+                    }
+                  ]
+                },
+                "paper" : {
+                  "anyOf" : [
+                    {
+                      "additionalProperties" : false,
+                      "properties" : {
+                        "id" : {
+                          "type" : "string"
+                        },
+                        "title" : {
+                          "type" : "string"
+                        },
+                        "url" : {
+                          "anyOf" : [
+                            {
+                              "type" : "null"
+                            },
+                            {
+                              "type" : "string"
+                            }
+                          ]
+                        },
+                        "venue" : {
+                          "anyOf" : [
+                            {
+                              "type" : "null"
+                            },
+                            {
+                              "type" : "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required" : [
+                        "id",
+                        "title",
+                        "url",
+                        "venue"
+                      ],
+                      "type" : "object"
+                    },
+                    {
+                      "type" : "null"
+                    }
+                  ]
+                },
+                "presenter" : {
+                  "anyOf" : [
+                    {
+                      "additionalProperties" : false,
+                      "properties" : {
+                        "id" : {
+                          "type" : "string"
+                        },
+                        "name" : {
+                          "type" : "string"
+                        }
+                      },
+                      "required" : [
+                        "id",
+                        "name"
+                      ],
+                      "type" : "object"
+                    },
+                    {
+                      "type" : "null"
+                    }
+                  ]
+                },
+                "questioners" : {
+                  "items" : {
+                    "additionalProperties" : false,
+                    "properties" : {
+                      "id" : {
+                        "type" : "string"
+                      },
+                      "manual" : {
+                        "type" : "boolean"
+                      },
+                      "name" : {
+                        "type" : "string"
+                      }
+                    },
+                    "required" : [
+                      "id",
+                      "name",
+                      "manual"
+                    ],
+                    "type" : "object"
+                  },
+                  "type" : "array"
+                },
+                "recordingUrl" : {
+                  "anyOf" : [
+                    {
+                      "type" : "null"
+                    },
+                    {
+                      "type" : "string"
+                    }
+                  ]
+                },
+                "semester" : {
+                  "type" : "string"
+                },
+                "slidesUrl" : {
+                  "anyOf" : [
+                    {
+                      "type" : "null"
+                    },
+                    {
+                      "type" : "string"
+                    }
+                  ]
+                },
+                "startsAt" : {
+                  "type" : "string"
+                },
+                "title" : {
+                  "anyOf" : [
+                    {
+                      "type" : "null"
+                    },
+                    {
+                      "type" : "string"
+                    }
+                  ]
+                }
+              },
+              "required" : [
+                "id",
+                "date",
+                "label",
+                "semester",
+                "kind",
+                "holiday",
+                "presenter",
+                "paper",
+                "title",
+                "slidesUrl",
+                "recordingUrl",
+                "notes",
+                "location",
+                "startsAt",
+                "joinUrl",
+                "questioners"
+              ],
+              "type" : "object"
+            },
+            {
+              "type" : "null"
+            }
+          ]
+        }
+      },
+      "required" : [
+        "meeting"
+      ],
+      "type" : "object"
+    },
+    "title" : "下一場實驗室會議"
+  },
+  {
+    "app" : "bento",
+    "description" : "Lunch orders, newest first: id, date, batch (the nth order of that day, when a day has several), restaurant, status (open takes orders, closed has been sent), how many people and dishes, and the total in NT$. Every member sees every order. Filter by status; limit defaults to 30.",
+    "hash" : "0f6c95bc5e889291",
+    "input" : {
+      "$schema" : "https://json-schema.org/draft/2020-12/schema",
+      "properties" : {
+        "limit" : {
+          "default" : 30,
+          "maximum" : 200,
+          "minimum" : 1,
+          "type" : "integer"
+        },
+        "status" : {
+          "enum" : [
+            "open",
+            "closed"
+          ],
+          "type" : "string"
+        }
+      },
+      "type" : "object"
+    },
+    "kind" : "query",
+    "name" : "list_bento_orders",
+    "output" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "orders" : {
+          "items" : {
+            "additionalProperties" : false,
+            "properties" : {
+              "batch" : {
+                "anyOf" : [
+                  {
+                    "type" : "null"
+                  },
+                  {
+                    "type" : "number"
+                  }
+                ]
+              },
+              "date" : {
+                "type" : "string"
+              },
+              "dishes" : {
+                "type" : "number"
+              },
+              "id" : {
+                "type" : "string"
+              },
+              "people" : {
+                "type" : "number"
+              },
+              "restaurant" : {
+                "type" : "string"
+              },
+              "restaurantId" : {
+                "type" : "string"
+              },
+              "status" : {
+                "type" : "string"
+              },
+              "total" : {
+                "type" : "number"
+              }
+            },
+            "required" : [
+              "batch",
+              "people",
+              "dishes",
+              "total",
+              "id",
+              "date",
+              "status",
+              "restaurantId",
+              "restaurant"
+            ],
+            "type" : "object"
+          },
+          "type" : "array"
+        }
+      },
+      "required" : [
+        "orders"
+      ],
+      "type" : "object"
+    },
+    "title" : "訂單"
+  },
+  {
+    "app" : "bento",
+    "description" : "One lunch order in full: the order (date, batch, status), its restaurant with the menu and option groups to order from, every line (id, member, dish, picked options, price), totals per member, and a tally per dish and option combination as the restaurant would take it.",
+    "hash" : "d4c0ee71b195897b",
+    "input" : {
+      "$schema" : "https://json-schema.org/draft/2020-12/schema",
+      "properties" : {
+        "orderId" : {
+          "format" : "uuid",
+          "pattern" : "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+          "type" : "string"
+        }
+      },
+      "required" : [
+        "orderId"
+      ],
+      "type" : "object"
+    },
+    "kind" : "query",
+    "name" : "get_bento_order",
+    "output" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "dishes" : {
+          "items" : {
+            "additionalProperties" : false,
+            "properties" : {
+              "combos" : {
+                "items" : {
+                  "additionalProperties" : false,
+                  "properties" : {
+                    "count" : {
+                      "type" : "number"
+                    },
+                    "options" : {
+                      "type" : "string"
+                    },
+                    "people" : {
+                      "items" : {
+                        "type" : "string"
+                      },
+                      "type" : "array"
+                    }
+                  },
+                  "required" : [
+                    "options",
+                    "count",
+                    "people"
+                  ],
+                  "type" : "object"
+                },
+                "type" : "array"
+              },
+              "count" : {
+                "type" : "number"
+              },
+              "name" : {
+                "type" : "string"
+              }
+            },
+            "required" : [
+              "name",
+              "count",
+              "combos"
+            ],
+            "type" : "object"
+          },
+          "type" : "array"
+        },
+        "lines" : {
+          "items" : {
+            "additionalProperties" : false,
+            "properties" : {
+              "createdAt" : {
+                "format" : "date-time",
+                "type" : "string"
+              },
+              "id" : {
+                "type" : "string"
+              },
+              "member" : {
+                "type" : "string"
+              },
+              "name" : {
+                "type" : "string"
+              },
+              "options" : {
+                "items" : {
+                  "additionalProperties" : false,
+                  "properties" : {
+                    "group" : {
+                      "type" : "string"
+                    },
+                    "label" : {
+                      "type" : "string"
+                    }
+                  },
+                  "required" : [
+                    "group",
+                    "label"
+                  ],
+                  "type" : "object"
+                },
+                "type" : "array"
+              },
+              "price" : {
+                "type" : "number"
+              },
+              "userId" : {
+                "type" : "string"
+              }
+            },
+            "required" : [
+              "id",
+              "userId",
+              "member",
+              "name",
+              "options",
+              "price",
+              "createdAt"
+            ],
+            "type" : "object"
+          },
+          "type" : "array"
+        },
+        "menu" : {
+          "items" : {
+            "additionalProperties" : false,
+            "properties" : {
+              "category" : {
+                "type" : "string"
+              },
+              "id" : {
+                "type" : "string"
+              },
+              "name" : {
+                "type" : "string"
+              },
+              "price" : {
+                "type" : "number"
+              }
+            },
+            "required" : [
+              "id",
+              "category",
+              "name",
+              "price"
+            ],
+            "type" : "object"
+          },
+          "type" : "array"
+        },
+        "optionGroups" : {
+          "items" : {
+            "additionalProperties" : false,
+            "properties" : {
+              "id" : {
+                "type" : "string"
+              },
+              "multiple" : {
+                "type" : "boolean"
+              },
+              "name" : {
+                "type" : "string"
+              },
+              "required" : {
+                "type" : "boolean"
+              },
+              "values" : {
+                "items" : {
+                  "additionalProperties" : false,
+                  "properties" : {
+                    "id" : {
+                      "type" : "string"
+                    },
+                    "label" : {
+                      "type" : "string"
+                    },
+                    "priceDelta" : {
+                      "type" : "number"
+                    }
+                  },
+                  "required" : [
+                    "id",
+                    "label",
+                    "priceDelta"
+                  ],
+                  "type" : "object"
+                },
+                "type" : "array"
+              }
+            },
+            "required" : [
+              "id",
+              "name",
+              "required",
+              "multiple",
+              "values"
+            ],
+            "type" : "object"
+          },
+          "type" : "array"
+        },
+        "order" : {
+          "additionalProperties" : false,
+          "properties" : {
+            "batch" : {
+              "anyOf" : [
+                {
+                  "type" : "null"
+                },
+                {
+                  "type" : "number"
+                }
+              ]
+            },
+            "closedAt" : {
+              "anyOf" : [
+                {
+                  "format" : "date-time",
+                  "type" : "string"
+                },
+                {
+                  "type" : "null"
+                }
+              ]
+            },
+            "createdAt" : {
+              "format" : "date-time",
+              "type" : "string"
+            },
+            "date" : {
+              "type" : "string"
+            },
+            "id" : {
+              "type" : "string"
+            },
+            "restaurantId" : {
+              "type" : "string"
+            },
+            "status" : {
+              "type" : "string"
+            }
+          },
+          "required" : [
+            "batch",
+            "id",
+            "date",
+            "status",
+            "closedAt",
+            "createdAt",
+            "restaurantId"
+          ],
+          "type" : "object"
+        },
+        "people" : {
+          "items" : {
+            "additionalProperties" : false,
+            "properties" : {
+              "lines" : {
+                "items" : {
+                  "additionalProperties" : false,
+                  "properties" : {
+                    "createdAt" : {
+                      "format" : "date-time",
+                      "type" : "string"
+                    },
+                    "id" : {
+                      "type" : "string"
+                    },
+                    "member" : {
+                      "type" : "string"
+                    },
+                    "name" : {
+                      "type" : "string"
+                    },
+                    "options" : {
+                      "items" : {
+                        "additionalProperties" : false,
+                        "properties" : {
+                          "group" : {
+                            "type" : "string"
+                          },
+                          "label" : {
+                            "type" : "string"
+                          }
+                        },
+                        "required" : [
+                          "group",
+                          "label"
+                        ],
+                        "type" : "object"
+                      },
+                      "type" : "array"
+                    },
+                    "price" : {
+                      "type" : "number"
+                    },
+                    "userId" : {
+                      "type" : "string"
+                    }
+                  },
+                  "required" : [
+                    "id",
+                    "userId",
+                    "member",
+                    "name",
+                    "options",
+                    "price",
+                    "createdAt"
+                  ],
+                  "type" : "object"
+                },
+                "type" : "array"
+              },
+              "name" : {
+                "type" : "string"
+              },
+              "total" : {
+                "type" : "number"
+              },
+              "userId" : {
+                "type" : "string"
+              }
+            },
+            "required" : [
+              "userId",
+              "name",
+              "total",
+              "lines"
+            ],
+            "type" : "object"
+          },
+          "type" : "array"
+        },
+        "restaurant" : {
+          "additionalProperties" : false,
+          "properties" : {
+            "id" : {
+              "type" : "string"
+            },
+            "mapUrl" : {
+              "anyOf" : [
+                {
+                  "type" : "null"
+                },
+                {
+                  "type" : "string"
+                }
+              ]
+            },
+            "menuImage" : {
+              "anyOf" : [
+                {
+                  "type" : "null"
+                },
+                {
+                  "type" : "number"
+                }
+              ]
+            },
+            "name" : {
+              "type" : "string"
+            },
+            "phone" : {
+              "type" : "string"
+            }
+          },
+          "required" : [
+            "menuImage"
+          ],
+          "type" : "object"
+        },
+        "totals" : {
+          "additionalProperties" : false,
+          "properties" : {
+            "dishes" : {
+              "type" : "number"
+            },
+            "people" : {
+              "type" : "number"
+            },
+            "total" : {
+              "type" : "number"
+            }
+          },
+          "required" : [
+            "people",
+            "dishes",
+            "total"
+          ],
+          "type" : "object"
+        }
+      },
+      "required" : [
+        "order",
+        "restaurant",
+        "menu",
+        "optionGroups",
+        "lines",
+        "people",
+        "dishes",
+        "totals"
+      ],
+      "type" : "object"
+    },
+    "title" : "訂單內容"
+  },
+  {
+    "app" : "bento",
+    "description" : "Orders one or more dishes on an open order for the signed-in member, all or nothing. Each item has menuItemId from the order's menu (get_bento_order), optionValueIds picking one value in every required group and at most one in a group that is not multiple, and quantity (1 to 10 lines). A bento admin may order for another member with userId. Confirm the dishes and options with the member first.",
+    "hash" : "cbb8a827b0d66f9f",
+    "input" : {
+      "$schema" : "https://json-schema.org/draft/2020-12/schema",
+      "properties" : {
+        "items" : {
+          "items" : {
+            "properties" : {
+              "menuItemId" : {
+                "format" : "uuid",
+                "pattern" : "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                "type" : "string"
+              },
+              "optionValueIds" : {
+                "default" : [
+
+                ],
+                "items" : {
+                  "format" : "uuid",
+                  "pattern" : "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                  "type" : "string"
+                },
+                "maxItems" : 30,
+                "type" : "array"
+              },
+              "quantity" : {
+                "default" : 1,
+                "maximum" : 10,
+                "minimum" : 1,
+                "type" : "integer"
+              }
+            },
+            "required" : [
+              "menuItemId"
+            ],
+            "type" : "object"
+          },
+          "maxItems" : 20,
+          "minItems" : 1,
+          "type" : "array"
+        },
+        "orderId" : {
+          "format" : "uuid",
+          "pattern" : "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+          "type" : "string"
+        },
+        "userId" : {
+          "format" : "uuid",
+          "pattern" : "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+          "type" : "string"
+        }
+      },
+      "required" : [
+        "orderId",
+        "items"
+      ],
+      "type" : "object"
+    },
+    "kind" : "mutation",
+    "name" : "add_bento_order_item",
+    "output" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "lines" : {
+          "items" : {
+            "additionalProperties" : false,
+            "properties" : {
+              "id" : {
+                "type" : "string"
+              },
+              "name" : {
+                "type" : "string"
+              },
+              "price" : {
+                "type" : "number"
+              }
+            },
+            "required" : [
+              "id",
+              "name",
+              "price"
+            ],
+            "type" : "object"
+          },
+          "type" : "array"
+        },
+        "total" : {
+          "type" : "number"
+        }
+      },
+      "required" : [
+        "lines",
+        "total"
+      ],
+      "type" : "object"
+    },
+    "title" : "點餐"
+  },
+  {
+    "app" : "meetings",
+    "description" : "Free and busy time in the CS department's meeting rooms for up to 14 days from date (Asia/Taipei), read live from the department system, the grid 新增會議 on /meetings draws. Each run of the 30-minute grid lists the free-tier rooms open, the paid ones, and the rooms the lab's shared account already holds; lab_bookings says who booked those through the portal and what for. Every member gets the same answer. Book a slot with book_meeting.",
+    "hash" : "09d88cae8e882234",
+    "input" : {
+      "$schema" : "https://json-schema.org/draft/2020-12/schema",
+      "properties" : {
+        "date" : {
+          "type" : "string"
+        },
+        "days" : {
+          "default" : 1,
+          "maximum" : 14,
+          "minimum" : 1,
+          "type" : "integer"
+        },
+        "merge" : {
+          "default" : true,
+          "description" : "false returns every 30-minute slot instead of merged runs",
+          "type" : "boolean"
+        }
+      },
+      "type" : "object"
+    },
+    "kind" : "query",
+    "name" : "list_room_availability",
+    "output" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "days" : {
+          "items" : {
+            "anyOf" : [
+              {
+                "additionalProperties" : false,
+                "properties" : {
+                  "date" : {
+                    "type" : "string"
+                  },
+                  "labBookings" : {
+                    "items" : {
+                      "additionalProperties" : false,
+                      "properties" : {
+                        "endTime" : {
+                          "type" : "string"
+                        },
+                        "id" : {
+                          "type" : "string"
+                        },
+                        "requestedBy" : {
+                          "type" : "string"
+                        },
+                        "requestedByName" : {
+                          "type" : "string"
+                        },
+                        "room" : {
+                          "anyOf" : [
+                            {
+                              "type" : "null"
+                            },
+                            {
+                              "type" : "string"
+                            }
+                          ]
+                        },
+                        "startTime" : {
+                          "type" : "string"
+                        },
+                        "title" : {
+                          "type" : "string"
+                        }
+                      },
+                      "required" : [
+                        "id",
+                        "room",
+                        "startTime",
+                        "endTime",
+                        "title",
+                        "requestedBy",
+                        "requestedByName"
+                      ],
+                      "type" : "object"
+                    },
+                    "type" : "array"
+                  },
+                  "runs" : {
+                    "items" : {
+                      "additionalProperties" : false,
+                      "properties" : {
+                        "end" : {
+                          "type" : "string"
+                        },
+                        "freeRooms" : {
+                          "items" : {
+                            "type" : "string"
+                          },
+                          "type" : "array"
+                        },
+                        "labRooms" : {
+                          "items" : {
+                            "type" : "string"
+                          },
+                          "type" : "array"
+                        },
+                        "paidRooms" : {
+                          "items" : {
+                            "type" : "string"
+                          },
+                          "type" : "array"
+                        },
+                        "start" : {
+                          "type" : "string"
+                        },
+                        "tier" : {
+                          "enum" : [
+                            "free",
+                            "full",
+                            "lab",
+                            "paid"
+                          ],
+                          "type" : "string"
+                        }
+                      },
+                      "required" : [
+                        "start",
+                        "end",
+                        "tier",
+                        "freeRooms",
+                        "paidRooms",
+                        "labRooms"
+                      ],
+                      "type" : "object"
+                    },
+                    "type" : "array"
+                  }
+                },
+                "required" : [
+                  "labBookings",
+                  "runs",
+                  "date"
+                ],
+                "type" : "object"
+              },
+              {
+                "additionalProperties" : false,
+                "properties" : {
+                  "date" : {
+                    "type" : "string"
+                  },
+                  "labBookings" : {
+                    "items" : {
+                      "additionalProperties" : false,
+                      "properties" : {
+                        "endTime" : {
+                          "type" : "string"
+                        },
+                        "id" : {
+                          "type" : "string"
+                        },
+                        "requestedBy" : {
+                          "type" : "string"
+                        },
+                        "requestedByName" : {
+                          "type" : "string"
+                        },
+                        "room" : {
+                          "anyOf" : [
+                            {
+                              "type" : "null"
+                            },
+                            {
+                              "type" : "string"
+                            }
+                          ]
+                        },
+                        "startTime" : {
+                          "type" : "string"
+                        },
+                        "title" : {
+                          "type" : "string"
+                        }
+                      },
+                      "required" : [
+                        "id",
+                        "room",
+                        "startTime",
+                        "endTime",
+                        "title",
+                        "requestedBy",
+                        "requestedByName"
+                      ],
+                      "type" : "object"
+                    },
+                    "type" : "array"
+                  },
+                  "slots" : {
+                    "items" : {
+                      "additionalProperties" : false,
+                      "properties" : {
+                        "end" : {
+                          "type" : "string"
+                        },
+                        "freeRooms" : {
+                          "items" : {
+                            "type" : "string"
+                          },
+                          "type" : "array"
+                        },
+                        "labRooms" : {
+                          "items" : {
+                            "type" : "string"
+                          },
+                          "type" : "array"
+                        },
+                        "paidRooms" : {
+                          "items" : {
+                            "type" : "string"
+                          },
+                          "type" : "array"
+                        },
+                        "start" : {
+                          "type" : "string"
+                        }
+                      },
+                      "required" : [
+                        "start",
+                        "end",
+                        "freeRooms",
+                        "paidRooms",
+                        "labRooms"
+                      ],
+                      "type" : "object"
+                    },
+                    "type" : "array"
+                  }
+                },
+                "required" : [
+                  "labBookings",
+                  "slots",
+                  "date"
+                ],
+                "type" : "object"
+              }
+            ]
+          },
+          "type" : "array"
+        }
+      },
+      "required" : [
+        "days"
+      ],
+      "type" : "object"
+    },
+    "title" : "教室空檔"
+  },
+  {
+    "app" : "meetings",
+    "description" : "Every meeting booked through the portal from date (default today, Asia/Taipei) for days days, the lab meeting's weekly Teams meeting included (lab_meeting_id set; its program is in list_lab_meetings): room (null for an online-only meeting), date, start and end, status booked or cancelled (cancelled rows stay), title, agenda, project group, attendees, who booked it, and the Teams meeting's state (pending, success with join_url, or failed with the reason). Every member sees every booking; only the member who booked one can cancel it with cancel_meeting.",
+    "hash" : "d4461988d509dc1a",
+    "input" : {
+      "$schema" : "https://json-schema.org/draft/2020-12/schema",
+      "properties" : {
+        "date" : {
+          "type" : "string"
+        },
+        "days" : {
+          "default" : 7,
+          "maximum" : 90,
+          "minimum" : 1,
+          "type" : "integer"
+        }
+      },
+      "type" : "object"
+    },
+    "kind" : "query",
+    "name" : "list_meetings",
+    "output" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "bookings" : {
+          "items" : {
+            "additionalProperties" : false,
+            "properties" : {
+              "agenda" : {
+                "anyOf" : [
+                  {
+                    "type" : "null"
+                  },
+                  {
+                    "type" : "string"
+                  }
+                ]
+              },
+              "attendees" : {
+                "items" : {
+                  "additionalProperties" : false,
+                  "properties" : {
+                    "email" : {
+                      "type" : "string"
+                    },
+                    "name" : {
+                      "type" : "string"
+                    },
+                    "username" : {
+                      "type" : "string"
+                    }
+                  },
+                  "required" : [
+                    "name",
+                    "email"
+                  ],
+                  "type" : "object"
+                },
+                "type" : "array"
+              },
+              "cancelledAt" : {
+                "anyOf" : [
+                  {
+                    "format" : "date-time",
+                    "type" : "string"
+                  },
+                  {
+                    "type" : "null"
+                  }
+                ]
+              },
+              "date" : {
+                "type" : "string"
+              },
+              "endTime" : {
+                "type" : "string"
+              },
+              "groupName" : {
+                "anyOf" : [
+                  {
+                    "type" : "null"
+                  },
+                  {
+                    "type" : "string"
+                  }
+                ]
+              },
+              "id" : {
+                "type" : "string"
+              },
+              "labMeetingId" : {
+                "anyOf" : [
+                  {
+                    "type" : "null"
+                  },
+                  {
+                    "type" : "string"
+                  }
+                ]
+              },
+              "meeting" : {
+                "anyOf" : [
+                  {
+                    "additionalProperties" : false,
+                    "properties" : {
+                      "error" : {
+                        "anyOf" : [
+                          {
+                            "type" : "null"
+                          },
+                          {
+                            "type" : "string"
+                          }
+                        ]
+                      },
+                      "joinUrl" : {
+                        "anyOf" : [
+                          {
+                            "type" : "null"
+                          },
+                          {
+                            "type" : "string"
+                          }
+                        ]
+                      },
+                      "status" : {
+                        "enum" : [
+                          "failed",
+                          "pending",
+                          "success"
+                        ],
+                        "type" : "string"
+                      }
+                    },
+                    "required" : [
+                      "status",
+                      "joinUrl",
+                      "error"
+                    ],
+                    "type" : "object"
+                  },
+                  {
+                    "type" : "null"
+                  }
+                ]
+              },
+              "online" : {
+                "type" : "boolean"
+              },
+              "requestedBy" : {
+                "type" : "string"
+              },
+              "requestedByName" : {
+                "type" : "string"
+              },
+              "room" : {
+                "anyOf" : [
+                  {
+                    "type" : "null"
+                  },
+                  {
+                    "type" : "string"
+                  }
+                ]
+              },
+              "seriesId" : {
+                "anyOf" : [
+                  {
+                    "type" : "null"
+                  },
+                  {
+                    "type" : "string"
+                  }
+                ]
+              },
+              "startTime" : {
+                "type" : "string"
+              },
+              "status" : {
+                "type" : "string"
+              },
+              "title" : {
+                "type" : "string"
+              }
+            },
+            "required" : [
+              "meeting",
+              "id",
+              "date",
+              "startTime",
+              "endTime",
+              "room",
+              "online",
+              "status",
+              "title",
+              "agenda",
+              "groupName",
+              "attendees",
+              "seriesId",
+              "labMeetingId",
+              "requestedBy",
+              "requestedByName",
+              "cancelledAt"
+            ],
+            "type" : "object"
+          },
+          "type" : "array"
+        }
+      },
+      "required" : [
+        "bookings"
+      ],
+      "type" : "object"
+    },
+    "title" : "會議"
+  },
+  {
+    "app" : "bulletin",
+    "description" : "Lab announcements, newest first, each with id, title, full content, author name, created_at, updated_at and mail: null when it was posted without mail, otherwise the mail's status (queued, sent or failed) and how many members it went to. Every member sees the same list.",
+    "hash" : "441ae543f9b00897",
+    "input" : {
+      "$schema" : "https://json-schema.org/draft/2020-12/schema",
+      "properties" : {
+        "limit" : {
+          "default" : 50,
+          "maximum" : 100,
+          "minimum" : 1,
+          "type" : "integer"
+        }
+      },
+      "type" : "object"
+    },
+    "kind" : "query",
+    "name" : "list_announcements",
+    "output" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "announcements" : {
+          "items" : {
+            "additionalProperties" : false,
+            "properties" : {
+              "author" : {
+                "anyOf" : [
+                  {
+                    "type" : "null"
+                  },
+                  {
+                    "type" : "string"
+                  }
+                ]
+              },
+              "content" : {
+                "type" : "string"
+              },
+              "createdAt" : {
+                "format" : "date-time",
+                "type" : "string"
+              },
+              "id" : {
+                "type" : "string"
+              },
+              "mail" : {
+                "anyOf" : [
+                  {
+                    "additionalProperties" : false,
+                    "properties" : {
+                      "recipients" : {
+                        "type" : "number"
+                      },
+                      "status" : {
+                        "enum" : [
+                          "failed",
+                          "queued",
+                          "sent"
+                        ],
+                        "type" : "string"
+                      }
+                    },
+                    "required" : [
+                      "status",
+                      "recipients"
+                    ],
+                    "type" : "object"
+                  },
+                  {
+                    "type" : "null"
+                  }
+                ]
+              },
+              "title" : {
+                "type" : "string"
+              },
+              "updatedAt" : {
+                "format" : "date-time",
+                "type" : "string"
+              }
+            },
+            "required" : [
+              "mail",
+              "id",
+              "title",
+              "content",
+              "author",
+              "createdAt",
+              "updatedAt"
+            ],
+            "type" : "object"
+          },
+          "type" : "array"
+        }
+      },
+      "required" : [
+        "announcements"
+      ],
+      "type" : "object"
+    },
+    "title" : "公告"
+  }
+]
