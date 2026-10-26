@@ -35,4 +35,5 @@ jobs:
       - name: Conventional Commits title
         env:
           TITLE: ${{ github.event.pull_request.title }}
-        run: echo "$TITLE" | grep -Eq '^(feat|fix|perf|refactor|docs|ci|chore|test|build|revert)(\([a-z0-9-]+\))?!?: .+'
+        run: |
+          echo "$TITLE" | grep -Eq '^(feat|fix|perf|refactor|docs|ci|chore|test|build|revert)(\([a-z0-9-]+\))?!?: .+'
