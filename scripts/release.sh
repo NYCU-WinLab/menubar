@@ -47,6 +47,12 @@ fi
 git -C "$root" fetch --quiet --tags origin
 git -C "$root" worktree add --quiet --detach "$work/src" "$tag"
 cd "$work/src"
+# CI checked this commit against main before handing over the keys; build
+# that commit and nothing else.
+if [ -n "${EXPECT_SHA:-}" ] && [ "$(git rev-parse HEAD)" != "$EXPECT_SHA" ]; then
+  echo "$tag moved: expected $EXPECT_SHA, found $(git rev-parse HEAD)." >&2
+  exit 1
+fi
 if [ "$(cat version.txt)" != "$version" ]; then
   echo "version.txt says $(cat version.txt), the tag says $version." >&2
   exit 1

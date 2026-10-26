@@ -58,6 +58,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Before any key touches the runner: the tag must name a commit already
+      # on main (reviewed and merged), or a manual run could hand the keys to
+      # unmerged code.
+      - name: Verify the tag is a release of main
+        run: |
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Not a release tag: $TAG" >&2; exit 1
+          fi
+          git fetch --quiet origin main --tags
+          sha=$(git rev-parse --verify "refs/tags/$TAG^{commit}")
+          if ! git merge-base --is-ancestor "$sha" origin/main; then
+            echo "$TAG ($sha) is not on main." >&2; exit 1
+          fi
+          gh release view "$TAG" --json tagName >/dev/null
+          echo "RELEASE_SHA=$sha" >> "$GITHUB_ENV"
+
       - name: Toolchain
         run: sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
 
@@ -94,6 +110,7 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           SPARKLE_KEY_FILE: ${{ runner.temp }}/sparkle.key
           SIGN_IDENTITY: Developer ID Application
+          EXPECT_SHA: ${{ env.RELEASE_SHA }}
         run: scripts/release.sh "$TAG"
 
       - name: Remove keys
