@@ -7,7 +7,7 @@
 - **New portal action**: add its name to `contract/actions.txt`, sync, then call it with `client.run(Name.self, .init(...))`.
 - **Native menu, not a popover.** The menu is an `NSMenu`; rows are `MenuRow` views sized by `MenuMetrics`, measured from the system Wi-Fi menu. Do not add custom backgrounds or Liquid Glass to rows (HIG: glass is for controls).
 - **Builds go to `.build/dist`**, outside iCloud; iCloud's extended attributes break code signing.
-- **Releases are signed on the maintainer's Mac** (`scripts/release.sh vX.Y.Z` after the release pull request merges). The Developer ID, the notarytool profile `zyx-notary` and the Sparkle key `winlab-menubar` live in that keychain; never export them into CI.
+- **Releases publish themselves.** Merging the Release Please pull request runs the `publish` job (`release-please.yml`): a macOS runner builds the tag, signs with the Developer ID, notarizes with the App Store Connect API key, makes the DMG, the Sparkle zip and appcast.xml, and publishes the release. The keys are secrets of the `release` environment, which only `main` can use. `scripts/release.sh vX.Y.Z` still works on a Mac with the keys in the keychain, as a fallback.
 - **UI copy** is Traditional Chinese, without dashes or `·`.
 
 ## Verify

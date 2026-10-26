@@ -61,7 +61,7 @@ flowchart LR
   R[GitHub release] -- "appcast.xml (Sparkle)" --> A
 ```
 
-WinLab calls portal actions with the member's API key and listens to `/api/events` for changes in the key's apps. Its Swift types are generated from the portal's API contract, so a portal change that would break the app fails portal CI, and a compatible change arrives here as a pull request. Releases are signed with a Developer ID and an EdDSA key that stay on the maintainer's Mac.
+WinLab calls portal actions with the member's API key and listens to `/api/events` for changes in the key's apps. Its Swift types are generated from the portal's API contract, so a portal change that would break the app fails portal CI, and a compatible change arrives here as a pull request. Merging a release pull request publishes the release: GitHub Actions signs it with the Developer ID, notarizes it and signs the Sparkle appcast, with keys kept as secrets of the `release` environment.
 
 ## For AI agents
 
@@ -74,7 +74,7 @@ Facts for coding agents and LLM tools. The rules for changing the code are in [A
 - **Run**: `scripts/dev-run.sh`
 - **Verify**: `swift test && swift run ContractGen check`
 - **Config**: `WINLAB_PORTAL_URL` (development only) points at a test portal
-- **Secrets**: the member's portal API key, in the login keychain (service `tw.winlab.menubar`); signing keys stay in the maintainer's keychain
+- **Secrets**: the member's portal API key, in the login keychain (service `tw.winlab.menubar`); release signing keys are GitHub secrets of the `release` environment
 - **Limits**: macOS 14 or later; the portal decides what a key may do
 
 ## Development
