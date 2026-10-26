@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/NYCU-WinLab/menubar/compare/v0.2.0...v0.3.0) (2026-10-26)
+
+
+### Features
+
+* synced lyrics in the menu bar and the menu ([#10](https://github.com/NYCU-WinLab/menubar/issues/10)) ([a443403](https://github.com/NYCU-WinLab/menubar/commit/a443403ead4a9f3b8d1338d979b414d6a868e19a))
+
 ## [0.2.0](https://github.com/NYCU-WinLab/menubar/compare/v0.1.1...v0.2.0) (2026-10-26)
 
 
