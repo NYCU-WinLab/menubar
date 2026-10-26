@@ -1,17 +1,19 @@
 import AppKit
 import SwiftUI
 
+/// An AppKit app: the menu bar item is an NSStatusItem with an NSMenu, and
+/// settings live in StatusMenu's window. (A SwiftUI App would open its
+/// Settings scene by itself at launch.)
 @main
-struct WinLabApp: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
+@MainActor
+enum Main {
+    static let delegate = AppDelegate()
 
-    var body: some Scene {
-        // The menu bar item is AppKit (StatusMenu); SwiftUI owns Settings.
-        Settings {
-            SettingsView()
-                .environment(delegate.model)
-                .environment(delegate.updater)
-        }
+    static func main() {
+        let app = NSApplication.shared
+        app.setActivationPolicy(.accessory)
+        app.delegate = delegate
+        app.run()
     }
 }
 
@@ -27,7 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.notifier.requestPermission()
         model.start()
         StatusMenu.makeSettings = { [model, updater] in
-            NSHostingController(rootView: SettingsView().environment(model).environment(updater))
+            SettingsWindow.controller(model: model, updater: updater)
         }
         let menu = StatusMenu(model: model, updater: updater)
         menu.openBento = { [weak self] id in self?.openBento(id) }
@@ -49,6 +51,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Hotkeys.shared.install()
         // Development: WINLAB_OPEN_MENU=1 opens the menu by itself, for
         // screenshots without touching the mouse.
+        if ProcessInfo.processInfo.environment["WINLAB_OPEN_SETTINGS"] != nil {
+            StatusMenu.openSettings()
+        }
         if ProcessInfo.processInfo.environment["WINLAB_OPEN_MENU"] != nil {
             Task {
                 try? await Task.sleep(for: .seconds(4))

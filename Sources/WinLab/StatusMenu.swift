@@ -284,6 +284,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
             let window = NSWindow(contentViewController: controller)
             window.title = "WinLab 設定"
             window.styleMask = [.titled, .closable]
+            window.toolbarStyle = .preference
             window.isReleasedWhenClosed = false
             window.center()
             settingsWindow = window
