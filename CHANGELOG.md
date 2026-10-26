@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/NYCU-WinLab/menubar/compare/v0.1.0...v0.1.1) (2026-10-26)
+
+
+### Bug fixes
+
+* paste in text fields, F-keys as shortcuts, a designed installer ([#6](https://github.com/NYCU-WinLab/menubar/issues/6)) ([41d8860](https://github.com/NYCU-WinLab/menubar/commit/41d8860c5fa176f1312cc0314190640a9bdc8078))
+
 ## 0.1.0 (2026-10-26)
 
 
