@@ -86,13 +86,12 @@ spctl --assess --type execute --verbose=2 "$app"
 zip="$work/WinLab-$version.zip"
 ditto -c -k --sequesterRsrc --keepParent "$app" "$zip"
 
-# A DMG with the app and a link to /Applications, signed and notarized too.
-stage="$work/dmg"
-mkdir -p "$stage"
-ditto "$app" "$stage/WinLab.app"
-ln -s /Applications "$stage/Applications"
+# The DMG: the installer window from Resources/dmg (background, icon size
+# and places), signed and notarized too.
+python3 -m venv "$work/venv"
+"$work/venv/bin/pip" install --quiet dmgbuild==1.6.5
 dmg="$work/WinLab-$version.dmg"
-hdiutil create -quiet -volname "WinLab $version" -srcfolder "$stage" -fs HFS+ -format UDZO "$dmg"
+"$work/venv/bin/dmgbuild" -s Resources/dmg/settings.py -D app="$app" "WinLab $version" "$dmg"
 codesign --force --timestamp --sign "${SIGN_IDENTITY:-Developer ID Application: YongXiang Zhan (68PK3GTMDD)}" "$dmg"
 notarize "$dmg"
 xcrun stapler staple "$dmg"

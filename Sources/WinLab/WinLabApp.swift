@@ -25,6 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var bentoWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.mainMenu = Self.editMenu()
         model.updater = updater
         model.notifier.requestPermission()
         model.start()
@@ -60,6 +61,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 menu.open()
             }
         }
+    }
+
+    /// A menu bar app has no menu bar of its own, so ⌘V, ⌘C, ⌘A and ⌘Z have
+    /// nowhere to go in text fields. This menu is never shown; it routes
+    /// those keys to the field being edited.
+    static func editMenu() -> NSMenu {
+        let main = NSMenu()
+        let app = NSMenuItem()
+        app.submenu = NSMenu()
+        app.submenu?.addItem(withTitle: "結束 WinLab", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        main.addItem(app)
+        let edit = NSMenuItem()
+        let menu = NSMenu(title: "編輯")
+        menu.addItem(withTitle: "還原", action: Selector(("undo:")), keyEquivalent: "z")
+        let redo = menu.addItem(withTitle: "重做", action: Selector(("redo:")), keyEquivalent: "z")
+        redo.keyEquivalentModifierMask = [.command, .shift]
+        menu.addItem(.separator())
+        menu.addItem(withTitle: "剪下", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        menu.addItem(withTitle: "拷貝", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        menu.addItem(withTitle: "貼上", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        menu.addItem(withTitle: "全選", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        edit.submenu = menu
+        main.addItem(edit)
+        let window = NSMenuItem()
+        window.submenu = NSMenu(title: "視窗")
+        window.submenu?.addItem(withTitle: "關閉", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        main.addItem(window)
+        return main
     }
 
     /// A small window for one bento order.
