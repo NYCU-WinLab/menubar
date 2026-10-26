@@ -3,30 +3,18 @@ import Foundation
 /// UserDefaults keys, one place, so views and the model agree.
 enum Pref {
     static let showTitleInMenuBar = "showTitleInMenuBar"
-    static let menuBarTitleWidth = "menuBarTitleWidth"
-    static let sections = "sections"
-    static let notifyAnnouncements = "notifyAnnouncements"
-    static let notifyMeeting = "notifyMeeting"
-    static let meetingLeadMinutes = "meetingLeadMinutes"
-    static let notifyBento = "notifyBento"
-    static let notifySong = "notifySong"
-    static let confirmDoor = "confirmDoor"
-    static let volumeStep = "volumeStep"
+    static let notify = "notify"
+    static let launchAtLoginOffered = "launchAtLoginOffered"
     static let seenAnnouncements = "seenAnnouncements"
     static let seenBentoOrders = "seenBentoOrders"
 
+    /// Fixed choices that used to be settings.
+    static let titleWidth = 160
+    static let volumeStep = 5
+    static let meetingLeadMinutes = 10
+
     static func registerDefaults() {
-        UserDefaults.standard.register(defaults: [
-            showTitleInMenuBar: true,
-            menuBarTitleWidth: 160,
-            notifyAnnouncements: true,
-            notifyMeeting: true,
-            meetingLeadMinutes: 10,
-            notifyBento: true,
-            notifySong: false,
-            confirmDoor: true,
-            volumeStep: 5,
-        ])
+        UserDefaults.standard.register(defaults: [showTitleInMenuBar: true, notify: true])
     }
 }
 
@@ -67,18 +55,5 @@ enum MenuSection: String, CaseIterable, Identifiable, Codable {
         case .bento: "bento"
         case .bulletin: "bulletin"
         }
-    }
-
-    /// Sections shown, from Settings, as a comma-separated string (so views
-    /// can watch it with @AppStorage); all by default.
-    static var enabled: Set<MenuSection> { parse(UserDefaults.standard.string(forKey: Pref.sections)) }
-
-    static func parse(_ raw: String?) -> Set<MenuSection> {
-        guard let raw else { return Set(allCases) }
-        return Set(raw.split(separator: ",").compactMap { MenuSection(rawValue: String($0)) })
-    }
-
-    static func store(_ sections: Set<MenuSection>) -> String {
-        allCases.filter(sections.contains).map(\.rawValue).joined(separator: ",")
     }
 }

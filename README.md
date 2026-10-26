@@ -41,15 +41,15 @@ The WinLab mascot appears in the menu bar, and its menu shows the song playing i
 
 ## Configuration
 
-Everything lives in 設定… (⌘,).
+Everything lives on one page in 設定… (⌘,).
 
-| Tab | Sets | Default |
+| Setting | Sets | Default |
 |-----|------|---------|
-| 帳號 | The portal API key, kept in the login keychain; open at login | none |
-| 顯示 | Song title in the menu bar, which sections show, door confirmation | all on |
-| 通知 | New announcements, meeting reminder lead time, bento orders, song changes | on, 10 minutes, on, off |
-| 快捷鍵 | Global shortcuts for each action | pause, next, volume |
-| 更新 | Automatic checks and installs | on |
+| API 金鑰 | The portal API key, kept in the login keychain | none |
+| 登入時開啟 | Start WinLab at login | on |
+| 選單列顯示歌名 | The playing song's title beside the menu bar icon | on |
+| 通知 | New announcements, open bento orders, a reminder 10 minutes before the lab meeting | on |
+| 快捷鍵 | Global shortcuts; F1 to F20 work alone | pause, next, volume |
 
 ## How it works
 

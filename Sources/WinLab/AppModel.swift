@@ -241,17 +241,12 @@ final class AppModel {
     }
 
     private func loadMusic() async {
-        let before = music?.current?.id
         await load(.music) {
             async let now = self.client.run(NowPlaying.self, .init())
             async let list = self.client.run(ListQueue.self, .init())
             self.music = try await now
             self.musicFetchedAt = Date()
             self.queue = try await list.items
-        }
-        if let current = music?.current, before != nil, current.id != before,
-           UserDefaults.standard.bool(forKey: Pref.notifySong) {
-            notifier.post(id: "song-\(current.id)", title: current.track.title, body: current.track.artist)
         }
     }
 
@@ -275,7 +270,7 @@ final class AppModel {
             }
             self.bentoDetail = self.bentoDetail.filter { id, _ in orders.contains { $0.id == id } }
             let seen = Set(UserDefaults.standard.stringArray(forKey: Pref.seenBentoOrders) ?? [])
-            if !initial || !seen.isEmpty, UserDefaults.standard.bool(forKey: Pref.notifyBento) {
+            if !initial || !seen.isEmpty, UserDefaults.standard.bool(forKey: Pref.notify) {
                 for order in orders where !seen.contains(order.id) {
                     self.notifier.post(id: "bento-\(order.id)", title: "便當開單了", body: order.restaurant)
                 }
@@ -290,7 +285,7 @@ final class AppModel {
             self.announcements = list
             let seen = Set(UserDefaults.standard.stringArray(forKey: Pref.seenAnnouncements) ?? [])
             // The first run on a Mac only learns what exists.
-            if !seen.isEmpty, UserDefaults.standard.bool(forKey: Pref.notifyAnnouncements) {
+            if !seen.isEmpty, UserDefaults.standard.bool(forKey: Pref.notify) {
                 for a in list where !seen.contains(a.id) {
                     self.notifier.post(id: "announcement-\(a.id)", title: a.title, body: String(a.content.prefix(200)))
                 }
@@ -333,8 +328,7 @@ final class AppModel {
 
     func nudgeVolume(_ direction: Int) async {
         guard let music else { return }
-        let step = UserDefaults.standard.integer(forKey: Pref.volumeStep)
-        await setVolume(Int(music.volume.rounded()) + direction * max(1, step))
+        await setVolume(Int(music.volume.rounded()) + direction * Pref.volumeStep)
     }
 
     // MARK: - Door
@@ -379,11 +373,11 @@ final class AppModel {
     }
 
     private func scheduleMeetingReminder() {
-        guard UserDefaults.standard.bool(forKey: Pref.notifyMeeting), let start = meetingStart, let meeting else {
+        guard UserDefaults.standard.bool(forKey: Pref.notify), let start = meetingStart, let meeting else {
             notifier.cancel(id: "meeting")
             return
         }
-        let lead = UserDefaults.standard.integer(forKey: Pref.meetingLeadMinutes)
+        let lead = Pref.meetingLeadMinutes
         let fire = start.addingTimeInterval(-Double(lead) * 60)
         guard fire > Date() else { return }
         var body = meeting.location
