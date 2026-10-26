@@ -6,31 +6,32 @@ import SwiftUI
 struct MusicSection: View {
     @Environment(AppModel.self) private var model
     @State private var volume: Double?
+    @State private var showQueue = false
 
     var body: some View {
         if let music = model.music {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 12) {
                 if let current = music.current {
-                    HStack(spacing: 10) {
+                    HStack(spacing: 12) {
                         Artwork(url: current.track.thumbnail)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(current.track.title).font(.body.weight(.medium)).lineLimit(1)
-                            Text(current.track.artist).font(.callout).foregroundStyle(.secondary).lineLimit(1)
+                            Text(current.track.title).font(.headline).lineLimit(1)
+                            Text(current.track.artist).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
                             if let by = current.addedBy {
                                 Text("\(by) 點的").font(.caption).foregroundStyle(.tertiary)
                             }
                         }
+                        Spacer(minLength: 0)
                     }
                     if let duration = current.track.durationS, duration > 0 {
                         TimelineView(.periodic(from: .now, by: 1)) { context in
                             let position = model.position(at: context.date)
-                            VStack(spacing: 2) {
-                                ProgressView(value: position, total: duration)
-                                    .progressViewStyle(.linear)
+                            VStack(spacing: 4) {
+                                ProgressCapsule(value: position / duration)
                                 HStack {
                                     Text(clock(position))
                                     Spacer()
-                                    Text(clock(duration))
+                                    Text("-" + clock(duration - position))
                                 }
                                 .font(.caption2.monospacedDigit())
                                 .foregroundStyle(.secondary)
@@ -38,59 +39,78 @@ struct MusicSection: View {
                         }
                     }
                 } else {
-                    Text("沒有在播").font(.callout).foregroundStyle(.secondary)
+                    Notice(text: "沒有在播")
                 }
-                HStack(spacing: 12) {
+                HStack(spacing: 10) {
                     Button {
                         Task { await model.togglePause() }
                     } label: {
-                        Image(systemName: music.paused ? "play.fill" : "pause.fill").frame(width: 18)
+                        Image(systemName: music.paused ? "play.fill" : "pause.fill")
+                            .frame(width: 22, height: 22)
+                            .contentTransition(.symbolEffect(.replace))
                     }
+                    .circleButton(prominent: true)
                     .help(music.paused ? "繼續" : "暫停")
                     Button {
                         Task { await model.skip() }
                     } label: {
                         Image(systemName: "forward.fill")
+                            .frame(width: 22, height: 22)
                     }
+                    .circleButton()
                     .disabled(music.current == nil)
                     .help("下一首")
-                    Image(systemName: "speaker.fill").foregroundStyle(.secondary).font(.caption)
-                    Slider(
-                        value: Binding(get: { volume ?? music.volume }, set: { volume = $0 }),
-                        in: 0 ... 100
-                    ) { editing in
-                        if !editing, let v = volume {
-                            Task {
-                                await model.setVolume(Int(v.rounded()))
-                                volume = nil
+                    HStack(spacing: 6) {
+                        Image(systemName: "speaker.fill")
+                        Slider(
+                            value: Binding(get: { volume ?? music.volume }, set: { volume = $0 }),
+                            in: 0 ... 100
+                        ) { editing in
+                            if !editing, let v = volume {
+                                Task {
+                                    await model.setVolume(Int(v.rounded()))
+                                    volume = nil
+                                }
+                            }
+                        }
+                        .controlSize(.small)
+                        Image(systemName: "speaker.wave.3.fill")
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .help("音量 \(Int((volume ?? music.volume).rounded()))")
+                }
+                if !music.online {
+                    Notice(text: "實驗室的播放器離線", symbol: "exclamationmark.triangle")
+                }
+                HStack {
+                    if !model.queue.isEmpty {
+                        Button {
+                            withAnimation(.smooth) { showQueue.toggle() }
+                        } label: {
+                            Label("接下來 \(model.queue.count) 首", systemImage: "chevron.right")
+                                .labelStyle(TrailingIcon(rotated: showQueue))
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("點歌") { model.openPortal("music") }
+                        .glassButton()
+                        .controlSize(.small)
+                }
+                .font(.caption)
+                if showQueue {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(model.queue.prefix(8), id: \.id) { item in
+                            VStack(alignment: .leading, spacing: 0) {
+                                Text(item.track.title).font(.callout).lineLimit(1)
+                                Text(item.track.artist).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                             }
                         }
                     }
-                    .controlSize(.small)
-                    Text("\(Int((volume ?? music.volume).rounded()))")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                        .frame(width: 24, alignment: .trailing)
+                    .transition(.opacity)
                 }
-                .buttonStyle(.borderless)
-                if !music.online {
-                    Label("實驗室的播放器離線", systemImage: "exclamationmark.triangle")
-                        .font(.caption).foregroundStyle(.orange)
-                }
-                if !model.queue.isEmpty {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("接下來").font(.caption).foregroundStyle(.secondary)
-                        ForEach(model.queue.prefix(3), id: \.id) { item in
-                            Text("\(item.track.title)，\(item.track.artist)")
-                                .font(.caption).lineLimit(1)
-                        }
-                        if model.queue.count > 3 {
-                            Text("還有 \(model.queue.count - 3) 首").font(.caption).foregroundStyle(.tertiary)
-                        }
-                    }
-                }
-                Button("點歌") { model.openPortal("music") }
-                    .buttonStyle(.link).font(.caption)
             }
         } else {
             ProgressView().controlSize(.small)
@@ -103,18 +123,38 @@ struct MusicSection: View {
     }
 }
 
+/// Text, then a chevron that turns when the group is open.
+struct TrailingIcon: LabelStyle {
+    var rotated: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 4) {
+            configuration.title
+            configuration.icon
+                .imageScale(.small)
+                .rotationEffect(.degrees(rotated ? 90 : 0))
+        }
+    }
+}
+
 struct Artwork: View {
     let url: String?
 
     var body: some View {
-        AsyncImage(url: url.flatMap(URL.init(string:))) { image in
+        AsyncImage(url: url.flatMap(URL.init(string:)).map(Self.larger)) { image in
             image.resizable().aspectRatio(contentMode: .fill)
         } placeholder: {
             Image(systemName: "music.note").foregroundStyle(.secondary)
         }
-        .frame(width: 44, height: 44)
-        .background(.quaternary)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .frame(width: 52, height: 52)
+        .background(.fill.tertiary)
+        .clipShape(.rect(cornerRadius: Metrics.artworkRadius, style: .continuous))
+    }
+
+    /// YouTube Music thumbnails come at 60 px; ask for 120 for Retina.
+    static func larger(_ url: URL) -> URL {
+        let text = url.absoluteString.replacingOccurrences(of: "=w60-h60", with: "=w120-h120")
+        return URL(string: text) ?? url
     }
 }
 
@@ -126,25 +166,30 @@ struct DoorSection: View {
     @State private var armed = false
 
     var body: some View {
-        HStack {
+        HStack(spacing: 10) {
             if let door = model.door {
-                Circle().fill(door.online ? Color.green : Color.red).frame(width: 7, height: 7)
+                Circle()
+                    .fill(door.online ? Color.green : Color.secondary)
+                    .frame(width: 8, height: 8)
                 Text(door.online ? "門禁在線" : (door.configured ? "門禁離線" : "門禁未設定"))
                     .font(.callout)
             }
             Spacer()
-            Button(armed ? "再按一次開門" : "開門") {
+            Button {
                 if confirm, !armed {
-                    armed = true
+                    withAnimation(.smooth) { armed = true }
                     Task {
                         try? await Task.sleep(for: .seconds(3))
-                        armed = false
+                        withAnimation(.smooth) { armed = false }
                     }
                     return
                 }
                 armed = false
                 Task { await model.openDoor() }
+            } label: {
+                Label(armed ? "再按一次" : "開門", systemImage: "lock.open.fill")
             }
+            .glassButton(prominent: true)
             .tint(armed ? .orange : nil)
             .disabled(model.door?.online == false)
         }
@@ -158,43 +203,55 @@ struct MeetingSection: View {
 
     var body: some View {
         if let meeting = model.meeting {
-            VStack(alignment: .leading, spacing: 4) {
-                if meeting.kind == .holiday {
-                    Text("\(meeting.date) 放假\(meeting.holiday.map { "：\($0)" } ?? "")").font(.callout)
-                } else {
-                    HStack {
-                        Text("\(meeting.date) \(meeting.startsAt)").font(.body.weight(.medium))
+            if meeting.kind == .holiday {
+                Notice(text: "\(meeting.date) 放假\(meeting.holiday.map { "，\($0)" } ?? "")", symbol: "sun.max")
+            } else {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(model.meetingStart?.formatted(Self.when) ?? "\(meeting.date) \(meeting.startsAt)")
+                            .font(.headline)
                         Spacer()
                         if let start = model.meetingStart, start > Date() {
-                            Text(start, style: .relative).font(.caption).foregroundStyle(.secondary)
+                            Text(start, format: .relative(presentation: .named))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
                     }
-                    Text(subtitle(meeting)).font(.callout).lineLimit(2)
-                    Text(meeting.location).font(.caption).foregroundStyle(.secondary)
-                    HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        if let presenter = meeting.presenter?.name {
+                            Text("\(presenter) 報告").font(.callout)
+                        }
+                        if let title = meeting.paper?.title ?? meeting.title {
+                            Text(title).font(.callout).foregroundStyle(.secondary).lineLimit(2)
+                        }
+                        Label(meeting.location, systemImage: "mappin.and.ellipse")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    HStack(spacing: 8) {
                         if let join = meeting.joinUrl.flatMap(URL.init(string:)) {
-                            Link("加入 Teams", destination: join)
+                            Link(destination: join) { Label("加入 Teams", systemImage: "video.fill") }
+                                .glassButton(prominent: true)
                         }
                         if let slides = meeting.slidesUrl.flatMap(URL.init(string:)) {
-                            Link("投影片", destination: slides)
+                            Link("投影片", destination: slides).glassButton()
                         }
-                        Button("週會頁") { model.openPortal("meetings") }.buttonStyle(.link)
+                        Spacer()
+                        Button("週會頁") { model.openPortal("meetings") }.glassButton()
                     }
-                    .font(.caption)
+                    .controlSize(.small)
                 }
             }
         } else {
-            Text("還沒排下一次週會").font(.callout).foregroundStyle(.secondary)
+            Notice(text: "還沒排下一次週會")
         }
     }
 
-    private func subtitle(_ m: GetNextLabMeeting.Output.Meeting) -> String {
-        var parts: [String] = []
-        if let p = m.presenter?.name { parts.append("\(p) 報告") }
-        if let title = m.paper?.title ?? m.title { parts.append(title) }
-        if parts.isEmpty { return m.label ?? "週會" }
-        return parts.joined(separator: "：")
-    }
+    static let when: Date.FormatStyle = {
+        var style = Date.FormatStyle(date: .omitted, time: .omitted, locale: Locale(identifier: "zh-Hant-TW"), timeZone: AppModel.taipei)
+        style = style.month(.defaultDigits).day().weekday(.abbreviated).hour().minute()
+        return style
+    }()
 }
 
 // MARK: - Rooms
@@ -203,43 +260,54 @@ struct RoomsSection: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             let now = AppModel.nowHHMM()
             let runs = (model.roomsToday?.runs ?? []).filter { $0.end > now }.prefix(4)
             if runs.isEmpty {
-                Text("今天沒有可借的時段了").font(.callout).foregroundStyle(.secondary)
+                Notice(text: "今天沒有可借的時段了")
             }
             ForEach(Array(runs.enumerated()), id: \.offset) { _, run in
-                HStack(alignment: .firstTextBaseline) {
-                    Text("\(run.start) 到 \(run.end)").font(.caption.monospacedDigit()).frame(width: 96, alignment: .leading)
-                    Text(describe(run)).font(.caption).foregroundStyle(color(run.tier)).lineLimit(1)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Circle().fill(color(run.tier)).frame(width: 6, height: 6)
+                    Text("\(run.start) 到 \(run.end)")
+                        .font(.callout.monospacedDigit())
+                    Text(describe(run))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
             }
             if !model.myBookings.isEmpty {
-                Text("我的會議").font(.caption).foregroundStyle(.secondary).padding(.top, 2)
+                Divider()
                 ForEach(model.myBookings.prefix(3), id: \.id) { b in
-                    HStack {
-                        Text("\(b.date.suffix(5)) \(b.startTime)").font(.caption.monospacedDigit())
-                        Text(b.title).font(.caption).lineLimit(1)
+                    HStack(spacing: 8) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(b.title).font(.callout).lineLimit(1)
+                            Text("\(b.date.suffix(5)) \(b.startTime)\(b.room.map { "，\($0)" } ?? "")")
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
                         Spacer()
                         if let join = b.meeting?.joinUrl.flatMap(URL.init(string:)) {
-                            Link("加入", destination: join).font(.caption)
-                        } else if let room = b.room {
-                            Text(room).font(.caption).foregroundStyle(.secondary)
+                            Link("加入", destination: join).glassButton().controlSize(.small)
                         }
                     }
                 }
             }
-            Button("借會議室") { model.openPortal("meetings") }
-                .buttonStyle(.link).font(.caption)
+            HStack {
+                Spacer()
+                Button("借會議室") { model.openPortal("meetings") }
+                    .glassButton()
+                    .controlSize(.small)
+            }
         }
     }
 
     private func describe(_ run: ListRoomAvailability.Output.Day.Run) -> String {
         switch run.tier {
-        case .free: "空：\(run.freeRooms.joined(separator: "、"))"
-        case .lab: "實驗室：\(run.labRooms.joined(separator: "、"))"
-        case .paid: "付費：\(run.paidRooms.joined(separator: "、"))"
+        case .free: run.freeRooms.joined(separator: "、")
+        case .lab: "實驗室 " + run.labRooms.joined(separator: "、")
+        case .paid: "付費 " + run.paidRooms.joined(separator: "、")
         case .full, .unknown: "都滿了"
         }
     }
@@ -261,14 +329,14 @@ struct BentoSection: View {
 
     var body: some View {
         if model.bentoOrders.isEmpty {
-            Text("目前沒有開單").font(.callout).foregroundStyle(.secondary)
+            Notice(text: "目前沒有開單")
         } else {
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(model.bentoOrders, id: \.id) { order in
                     let mine = model.myLines(in: order.id)
                     HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(order.restaurant).font(.body.weight(.medium))
+                            Text(order.restaurant).font(.headline)
                             Text("\(order.date)，\(Int(order.people)) 人點了 \(Int(order.dishes)) 份")
                                 .font(.caption).foregroundStyle(.secondary)
                             if !mine.isEmpty {
@@ -277,8 +345,11 @@ struct BentoSection: View {
                             }
                         }
                         Spacer()
-                        Button(mine.isEmpty ? "點餐" : "加點") { model.openBentoOrder = order.id }
-                            .disabled(model.bentoDetail[order.id] == nil)
+                        Button(mine.isEmpty ? "點餐" : "加點") {
+                            withAnimation(.smooth) { model.openBentoOrder = order.id }
+                        }
+                        .glassButton(prominent: mine.isEmpty)
+                        .disabled(model.bentoDetail[order.id] == nil)
                     }
                 }
             }
@@ -300,18 +371,24 @@ struct BentoOrderView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Button {
-                    model.openBentoOrder = nil
+                    withAnimation(.smooth) { model.openBentoOrder = nil }
                 } label: {
-                    Label("返回", systemImage: "chevron.left")
+                    Image(systemName: "chevron.left").frame(width: 16, height: 16)
                 }
-                .buttonStyle(.borderless)
+                .circleButton()
+                .help("返回")
                 Spacer()
                 Text(detail?.restaurant.name ?? "便當").font(.headline)
                 Spacer()
-                Button("網頁") { model.openPortal("bento") }.buttonStyle(.borderless)
+                Button {
+                    model.openPortal("bento")
+                } label: {
+                    Image(systemName: "safari").frame(width: 16, height: 16)
+                }
+                .circleButton()
+                .help("在 portal 開啟")
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .padding(Metrics.modulePadding)
             Divider()
             if let detail {
                 ScrollView {
@@ -319,15 +396,16 @@ struct BentoOrderView: View {
                         menu(detail)
                         if dish != nil { options(detail) }
                     }
-                    .padding(14)
+                    .padding(Metrics.modulePadding)
                 }
                 .frame(maxHeight: 460)
                 Divider()
-                footer(detail).padding(14)
+                footer(detail).padding(Metrics.modulePadding)
             } else {
                 ProgressView().padding(24).frame(maxWidth: .infinity)
             }
         }
+        .background(.fill.quaternary, in: .rect(cornerRadius: Metrics.moduleRadius, style: .continuous))
     }
 
     private func menu(_ detail: GetBentoOrder.Output) -> some View {
@@ -406,6 +484,7 @@ struct BentoOrderView: View {
                     if ok { model.openBentoOrder = nil }
                 }
             }
+            .glassButton(prominent: true)
             .keyboardShortcut(.defaultAction)
             .disabled(dish == nil || !missing.isEmpty || sending)
         }
@@ -429,7 +508,7 @@ struct BulletinSection: View {
 
     var body: some View {
         if model.announcements.isEmpty {
-            Text("沒有公告").font(.callout).foregroundStyle(.secondary)
+            Notice(text: "沒有公告")
         } else {
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(model.announcements.prefix(3), id: \.id) { a in
@@ -438,8 +517,11 @@ struct BulletinSection: View {
                     } label: {
                         VStack(alignment: .leading, spacing: 1) {
                             Text(a.title).font(.callout).lineLimit(1)
-                            Text("\(a.author ?? "")  \(a.createdAt.formatted(date: .abbreviated, time: .omitted))")
-                                .font(.caption).foregroundStyle(.secondary)
+                            HStack(spacing: 4) {
+                                if let author = a.author { Text(author) }
+                                Text(a.createdAt, format: .relative(presentation: .named))
+                            }
+                            .font(.caption).foregroundStyle(.secondary)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .contentShape(Rectangle())

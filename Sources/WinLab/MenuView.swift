@@ -1,80 +1,84 @@
 import PortalKit
 import SwiftUI
 
-/// The window under the menu bar item.
+/// The window under the menu bar item. The window itself is system Liquid
+/// Glass; modules sit on it as content, controls use glass button styles.
 struct MenuView: View {
     @Environment(AppModel.self) private var model
     @Environment(Updater.self) private var updater
     @AppStorage(Pref.sections) private var sectionsRaw: String = MenuSection.store(Set(MenuSection.allCases))
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: Metrics.moduleSpacing) {
             header
-            Divider()
             if model.outdated || updater.available != nil {
                 UpdateBanner()
-                Divider()
             }
             content
+        }
+        .padding(Metrics.inset)
+        .frame(width: Metrics.windowWidth)
+        .overlay(alignment: .bottom) {
             if let toast = model.toast {
-                Divider()
                 Text(toast)
-                    .font(.callout)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .font(.callout.weight(.medium))
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
-                    .background(.quaternary.opacity(0.5))
+                    .glassCapsule()
+                    .padding(.bottom, 14)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .frame(width: 340)
-        .animation(.default, value: model.toast)
+        .animation(.smooth, value: model.toast)
     }
 
     private var header: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             Group {
                 if let mascot = MenuBarLabel.mascot {
-                    Image(nsImage: mascot).resizable().frame(width: 20, height: 20)
+                    Image(nsImage: mascot).resizable().scaledToFit()
                 } else {
                     Image(systemName: "antenna.radiowaves.left.and.right")
                 }
             }
+            .frame(width: 22, height: 22)
             .foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 0) {
                 Text("WinLab").font(.headline)
                 if let me = model.me {
-                    Text(me.name).font(.caption).foregroundStyle(.secondary)
+                    HStack(spacing: 4) {
+                        Text(me.name)
+                        if model.keyState == .ok {
+                            Circle()
+                                .fill(model.connected ? Color.green : Color.orange)
+                                .frame(width: 6, height: 6)
+                                .help(model.connected ? "即時更新中" : "重新連線中")
+                        }
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
             }
             Spacer()
-            if model.keyState == .ok {
-                Circle()
-                    .fill(model.connected ? Color.green : Color.orange)
-                    .frame(width: 7, height: 7)
-                    .help(model.connected ? "即時更新中" : "重新連線中")
-            }
-            Button {
-                model.openPortal()
+            Menu {
+                Button("開啟 portal") { model.openPortal() }
+                SettingsLink { Text("設定…") }
+                    .keyboardShortcut(",")
+                Divider()
+                Button("結束 WinLab") { NSApp.terminate(nil) }
+                    .keyboardShortcut("q")
             } label: {
-                Image(systemName: "safari")
+                Image(systemName: "ellipsis")
+                    .frame(width: 16, height: 16)
             }
-            .buttonStyle(.borderless)
-            .help("開啟 portal")
-            SettingsLink {
-                Image(systemName: "gearshape")
-            }
-            .buttonStyle(.borderless)
-            .help("設定")
-            Button {
-                NSApp.terminate(nil)
-            } label: {
-                Image(systemName: "power")
-            }
-            .buttonStyle(.borderless)
-            .help("結束 WinLab")
+            .menuIndicator(.hidden)
+            .menuStyle(.button)
+            .circleButton()
+            .fixedSize()
+            .help("更多")
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 6)
+        .padding(.top, 4)
     }
 
     @ViewBuilder
@@ -82,7 +86,6 @@ struct MenuView: View {
         switch model.keyState {
         case .missing, .invalid:
             KeySetupView()
-                .padding(14)
         case .checking:
             ProgressView()
                 .controlSize(.small)
@@ -100,52 +103,51 @@ struct MenuView: View {
     private var sections: some View {
         let enabled = MenuSection.parse(sectionsRaw)
         return ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(spacing: Metrics.moduleSpacing) {
                 ForEach(MenuSection.allCases.filter { enabled.contains($0) }) { section in
                     SectionView(section: section)
-                    if section != MenuSection.allCases.last(where: { enabled.contains($0) }) {
-                        Divider().padding(.leading, 14)
-                    }
                 }
             }
         }
-        .frame(maxHeight: 620)
+        .scrollIndicators(.never)
+        .frame(maxHeight: 640)
         .fixedSize(horizontal: false, vertical: true)
+        .clipShape(.rect(cornerRadius: Metrics.moduleRadius, style: .continuous))
     }
 }
 
-/// One part of the menu, or why it is empty.
+/// One module, or why it is empty.
 struct SectionView: View {
     let section: MenuSection
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(section.title, systemImage: section.symbol)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
+        switch section {
+        case .music: module { MusicSection() }
+        case .door: module { DoorSection() }
+        case .meeting: module { MeetingSection() }
+        case .rooms: module { RoomsSection() }
+        case .bento: module { BentoSection() }
+        case .bulletin: module { BulletinSection() }
+        }
+    }
+
+    private func module(@ViewBuilder _ content: () -> some View) -> some View {
+        Module(title: section.title, symbol: section.symbol) {
             if !model.grantedApps.contains(section.app) {
-                Text("金鑰沒有開「\(section.app)」權限")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                Notice(text: "金鑰沒有開這個權限", symbol: "lock")
             } else if let error = model.errors[section] {
-                Text(error)
-                    .font(.callout)
-                    .foregroundStyle(.red)
+                Notice(text: Self.friendly(error), symbol: "exclamationmark.triangle")
             } else {
-                switch section {
-                case .music: MusicSection()
-                case .door: DoorSection()
-                case .meeting: MeetingSection()
-                case .rooms: RoomsSection()
-                case .bento: BentoSection()
-                case .bulletin: BulletinSection()
-                }
+                content()
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+    }
+
+    /// Server-side failures read as a sentence, not a stack trace.
+    static func friendly(_ error: String) -> String {
+        if error.localizedCaseInsensitiveContains("fetch failed") { return "portal 暫時讀不到這項資料" }
+        return error
     }
 }
 
@@ -155,17 +157,20 @@ struct UpdateBanner: View {
     @Environment(Updater.self) private var updater
 
     var body: some View {
-        HStack {
-            Image(systemName: "arrow.down.circle.fill").foregroundStyle(.blue)
-            Text(updater.available.map { "WinLab \($0) 可以更新了" } ?? "portal 已更新，請更新 WinLab")
+        HStack(spacing: 10) {
+            Image(systemName: "arrow.down.circle.fill")
+                .font(.title3)
+                .foregroundStyle(.tint)
+            Text(updater.available.map { "WinLab \($0) 可以更新了" } ?? "portal 已改版，請更新 WinLab")
                 .font(.callout)
             Spacer()
             Button("更新") { updater.checkForUpdates() }
+                .glassButton(prominent: true)
                 .controlSize(.small)
                 .disabled(!updater.canCheck)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
+        .padding(Metrics.modulePadding)
+        .background(.fill.quaternary, in: .rect(cornerRadius: Metrics.moduleRadius, style: .continuous))
     }
 }
 
@@ -175,24 +180,28 @@ struct KeySetupView: View {
     @State private var key = ""
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if case let .invalid(message) = model.keyState {
-                Text(message).font(.callout).foregroundStyle(.red)
-            } else {
-                Text("貼上 portal 的 API 金鑰就能開始用。").font(.callout)
-            }
-            Text("在 portal 的 API 金鑰頁建立一把，勾選個人資料、點歌、開門、會議、便當、公告。")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            SecureField("wak_…", text: $key)
-                .textFieldStyle(.roundedBorder)
-                .onSubmit(save)
-            HStack {
-                Button("建立金鑰") { model.openPortal("api-keys") }
-                Spacer()
-                Button("儲存", action: save)
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(key.trimmingCharacters(in: .whitespaces).isEmpty)
+        Module(title: "連上 portal", symbol: "key") {
+            VStack(alignment: .leading, spacing: 10) {
+                if case let .invalid(message) = model.keyState {
+                    Notice(text: message, symbol: "exclamationmark.triangle")
+                } else {
+                    Text("貼上 portal 的 API 金鑰就能開始用。").font(.callout)
+                }
+                Text("建立金鑰時勾選個人資料、點歌、開門、會議、便當、公告。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                SecureField("wak_…", text: $key)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit(save)
+                HStack {
+                    Button("建立金鑰") { model.openPortal("api-keys") }
+                        .glassButton()
+                    Spacer()
+                    Button("儲存", action: save)
+                        .glassButton(prominent: true)
+                        .keyboardShortcut(.defaultAction)
+                        .disabled(key.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
             }
         }
     }

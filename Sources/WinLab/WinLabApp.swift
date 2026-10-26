@@ -48,6 +48,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         Hotkeys.shared.install()
+        // Development: WINLAB_OPEN_MENU=1 opens the menu by itself, for
+        // window screenshots without touching the mouse.
+        if ProcessInfo.processInfo.environment["WINLAB_OPEN_MENU"] != nil {
+            Task {
+                try? await Task.sleep(for: .seconds(4))
+                Self.statusButton()?.performClick(nil)
+            }
+        }
+    }
+
+    static func statusButton() -> NSStatusBarButton? {
+        func find(_ view: NSView?) -> NSStatusBarButton? {
+            guard let view else { return nil }
+            if let button = view as? NSStatusBarButton { return button }
+            return view.subviews.lazy.compactMap(find).first
+        }
+        return NSApp.windows.lazy.compactMap { find($0.contentView) }.first
     }
 }
 
