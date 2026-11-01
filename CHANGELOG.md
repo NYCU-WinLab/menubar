@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/NYCU-WinLab/menubar/compare/v0.3.0...v0.3.1) (2026-11-01)
+
+
+### Bug fixes
+
+* **contract:** map an anyOf of plain strings to String ([#13](https://github.com/NYCU-WinLab/menubar/issues/13)) ([01356b7](https://github.com/NYCU-WinLab/menubar/commit/01356b70667e61de8e22bce65c0f8bf332637317))
+
 ## [0.3.0](https://github.com/NYCU-WinLab/menubar/compare/v0.2.0...v0.3.0) (2026-10-26)
 
 
