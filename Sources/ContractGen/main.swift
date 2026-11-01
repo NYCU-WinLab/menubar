@@ -169,6 +169,11 @@ func swiftType(_ schema: Schema, named: String, side: Side, scope: Scope) -> (St
         // Same primitive twice (true and false, two enums): one of them.
         let kinds = Set(rest.compactMap { $0["type"] as? String })
         if kinds.count == 1, kinds.first == "boolean" { return ("Bool", nullable) }
+        // Strings that differ only in pattern or format (a YouTube id or a
+        // bilibili: id): still a String. Enums keep falling through.
+        if !rest.isEmpty, rest.allSatisfy({ ($0["type"] as? String) == "string" && $0["enum"] == nil }) {
+            return ("String", nullable)
+        }
         if !rest.isEmpty, rest.allSatisfy({ ($0["type"] as? String) == "object" }) {
             return (swiftType(mergeObjects(rest), named: named, side: side, scope: scope).0, nullable)
         }

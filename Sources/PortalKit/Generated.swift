@@ -8,7 +8,7 @@ public enum Contract {
         "add_bento_order_item": (app: "bento", hash: "cbb8a827b0d66f9f"),
         "get_bento_order": (app: "bento", hash: "d4c0ee71b195897b"),
         "get_door_status": (app: "door", hash: "5104c2a84fcdfd13"),
-        "get_lyrics": (app: "music", hash: "1c108c98a4be3a31"),
+        "get_lyrics": (app: "music", hash: "2f8bb4a5b21db86a"),
         "get_next_lab_meeting": (app: "meetings", hash: "b1fd95b2454c78fa"),
         "list_announcements": (app: "bulletin", hash: "441ae543f9b00897"),
         "list_bento_orders": (app: "bento", hash: "0f6c95bc5e889291"),
@@ -208,7 +208,7 @@ public enum GetDoorStatus: PortalAction {
 public enum GetLyrics: PortalAction {
     public static let name = "get_lyrics"
     public static let app = "music"
-    public static let hash = "1c108c98a4be3a31"
+    public static let hash = "2f8bb4a5b21db86a"
 
     public struct Input: Encodable, Sendable, Equatable {
         public var videoId: String

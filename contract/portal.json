@@ -1724,13 +1724,25 @@
   {
     "app" : "music",
     "description" : "Lyrics of a queued or played song to follow along (the page and the WinLab Mac app show them): timed lines (start second and text) when LRCLIB has them, else plain lines, else none.",
-    "hash" : "1c108c98a4be3a31",
+    "hash" : "2f8bb4a5b21db86a",
     "input" : {
       "$schema" : "https://json-schema.org/draft/2020-12/schema",
       "properties" : {
         "videoId" : {
-          "pattern" : "^[\\w-]{11}$",
-          "type" : "string"
+          "anyOf" : [
+            {
+              "pattern" : "^[\\w-]{11}$",
+              "type" : "string"
+            },
+            {
+              "pattern" : "^bilibili:(BV[0-9A-Za-z]{10})(?:_p(\\d{1,3}))?$",
+              "type" : "string"
+            },
+            {
+              "pattern" : "^twitch:([a-z0-9_]{1,25})$",
+              "type" : "string"
+            }
+          ]
         }
       },
       "required" : [
