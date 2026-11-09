@@ -1405,8 +1405,8 @@
   },
   {
     "app" : "meetings",
-    "description" : "Every meeting booked through the portal from date (default today, Asia/Taipei) for days days, the lab meeting's weekly Teams meeting included (lab_meeting_id set; its program is in list_lab_meetings): room (null for an online-only meeting), date, start and end, status booked or cancelled (cancelled rows stay), title, agenda, project group, attendees, who booked it, and the Teams meeting's state (pending, success with join_url, or failed with the reason). Every member sees every booking; only the member who booked one can cancel it with cancel_meeting.",
-    "hash" : "d4461988d509dc1a",
+    "description" : "Every meeting booked through the portal from date (default today, Asia/Taipei) for days days, the lab meeting's weekly Teams meeting included (lab_meeting_id set; its program is in list_lab_meetings): room (null for an online-only meeting), date, start and end, status booked or cancelled (cancelled rows stay), title, agenda, project group, attendees, who booked it, and the Teams meeting's state (pending, success with join_url, or failed with the reason). Every member sees every booking; only the member who booked one (or the member it was booked with through book_appointment) can cancel it with cancel_meeting.",
+    "hash" : "540b8e1449a08b98",
     "input" : {
       "$schema" : "https://json-schema.org/draft/2020-12/schema",
       "properties" : {
@@ -1480,6 +1480,16 @@
               "endTime" : {
                 "type" : "string"
               },
+              "externalUrl" : {
+                "anyOf" : [
+                  {
+                    "type" : "null"
+                  },
+                  {
+                    "type" : "string"
+                  }
+                ]
+              },
               "groupName" : {
                 "anyOf" : [
                   {
@@ -1549,6 +1559,16 @@
                   }
                 ]
               },
+              "meetingPrefix" : {
+                "anyOf" : [
+                  {
+                    "type" : "null"
+                  },
+                  {
+                    "type" : "string"
+                  }
+                ]
+              },
               "online" : {
                 "type" : "boolean"
               },
@@ -1589,6 +1609,7 @@
               }
             },
             "required" : [
+              "title",
               "meeting",
               "id",
               "date",
@@ -1596,8 +1617,9 @@
               "endTime",
               "room",
               "online",
+              "externalUrl",
               "status",
-              "title",
+              "meetingPrefix",
               "agenda",
               "groupName",
               "attendees",

@@ -12,7 +12,7 @@ public enum Contract {
         "get_next_lab_meeting": (app: "meetings", hash: "b1fd95b2454c78fa"),
         "list_announcements": (app: "bulletin", hash: "441ae543f9b00897"),
         "list_bento_orders": (app: "bento", hash: "0f6c95bc5e889291"),
-        "list_meetings": (app: "meetings", hash: "d4461988d509dc1a"),
+        "list_meetings": (app: "meetings", hash: "540b8e1449a08b98"),
         "list_queue": (app: "music", hash: "a5039ab7e5d35e35"),
         "now_playing": (app: "music", hash: "5d386b4666d36c33"),
         "open_door": (app: "door", hash: "39f3462bb92b4c7e"),
@@ -387,7 +387,7 @@ public enum ListBentoOrders: PortalAction {
 public enum ListMeetings: PortalAction {
     public static let name = "list_meetings"
     public static let app = "meetings"
-    public static let hash = "d4461988d509dc1a"
+    public static let hash = "540b8e1449a08b98"
 
     public struct Input: Encodable, Sendable, Equatable {
         public var date: String?
@@ -408,10 +408,12 @@ public enum ListMeetings: PortalAction {
             public var cancelledAt: Date?
             public var date: String
             public var endTime: String
+            public var externalUrl: String?
             public var groupName: String?
             public var id: String
             public var labMeetingId: String?
             public var meeting: Meeting?
+            public var meetingPrefix: String?
             public var online: Bool
             public var requestedBy: String
             public var requestedByName: String
