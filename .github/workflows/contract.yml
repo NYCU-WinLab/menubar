@@ -28,7 +28,14 @@ jobs:
       - name: Changed?
         id: diff
         run: |
-          if git diff --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+          if git diff --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          # The open sync pull request already carries this contract: skip the rebuild.
+          if git fetch -q origin contract/sync 2>/dev/null && git diff --quiet FETCH_HEAD -- $(git diff --name-only); then
+            echo "Pull request contract/sync already has this contract."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Build and test against it
         if: steps.diff.outputs.changed == 'true'
         run: swift build && swift test

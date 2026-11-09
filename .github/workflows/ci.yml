@@ -20,7 +20,7 @@ jobs:
           swift --version
       - name: Generated types match contract/portal.json
         run: swift run ContractGen check
-      - run: swift build
+      # swift test builds the targets; Bundle below builds the release app.
       - run: swift test
       - name: Bundle (universal, unsigned)
         run: |
