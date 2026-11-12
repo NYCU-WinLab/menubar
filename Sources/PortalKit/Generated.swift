@@ -12,9 +12,9 @@ public enum Contract {
         "get_next_lab_meeting": (app: "meetings", hash: "b1fd95b2454c78fa"),
         "list_announcements": (app: "bulletin", hash: "441ae543f9b00897"),
         "list_bento_orders": (app: "bento", hash: "0f6c95bc5e889291"),
-        "list_meetings": (app: "meetings", hash: "d4461988d509dc1a"),
-        "list_queue": (app: "music", hash: "a5039ab7e5d35e35"),
-        "now_playing": (app: "music", hash: "5d386b4666d36c33"),
+        "list_meetings": (app: "meetings", hash: "540b8e1449a08b98"),
+        "list_queue": (app: "music", hash: "d6cd40defc720a0d"),
+        "now_playing": (app: "music", hash: "43e38547bf1925cc"),
         "open_door": (app: "door", hash: "39f3462bb92b4c7e"),
         "set_paused": (app: "music", hash: "2f8a351cf9e80968"),
         "set_volume": (app: "music", hash: "279ef375311d7981"),
@@ -387,7 +387,7 @@ public enum ListBentoOrders: PortalAction {
 public enum ListMeetings: PortalAction {
     public static let name = "list_meetings"
     public static let app = "meetings"
-    public static let hash = "d4461988d509dc1a"
+    public static let hash = "540b8e1449a08b98"
 
     public struct Input: Encodable, Sendable, Equatable {
         public var date: String?
@@ -408,10 +408,12 @@ public enum ListMeetings: PortalAction {
             public var cancelledAt: Date?
             public var date: String
             public var endTime: String
+            public var externalUrl: String?
             public var groupName: String?
             public var id: String
             public var labMeetingId: String?
             public var meeting: Meeting?
+            public var meetingPrefix: String?
             public var online: Bool
             public var requestedBy: String
             public var requestedByName: String
@@ -452,7 +454,7 @@ public enum ListMeetings: PortalAction {
 public enum ListQueue: PortalAction {
     public static let name = "list_queue"
     public static let app = "music"
-    public static let hash = "a5039ab7e5d35e35"
+    public static let hash = "d6cd40defc720a0d"
 
     public struct Input: Encodable, Sendable, Equatable {
 
@@ -471,6 +473,7 @@ public enum ListQueue: PortalAction {
             public var endedBy: String?
             public var fromPlaylist: Bool
             public var id: String
+            public var liked: Bool
             public var startedAt: Date?
             public var status: Status
             public var track: Track
@@ -518,7 +521,7 @@ public enum ListQueue: PortalAction {
 public enum NowPlaying: PortalAction {
     public static let name = "now_playing"
     public static let app = "music"
-    public static let hash = "5d386b4666d36c33"
+    public static let hash = "43e38547bf1925cc"
 
     public struct Input: Encodable, Sendable, Equatable {
 
@@ -544,6 +547,7 @@ public enum NowPlaying: PortalAction {
             public var endedBy: String?
             public var fromPlaylist: Bool
             public var id: String
+            public var liked: Bool
             public var startedAt: Date?
             public var status: Status
             public var track: Track
