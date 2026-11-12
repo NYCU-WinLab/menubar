@@ -47,8 +47,8 @@
   },
   {
     "app" : "music",
-    "description" : "The song playing on the lab HomePod: title, artist, who added it and how (queue, next or cut_in), position in seconds, paused, volume (0-100), autoplay (recommend a song when the queue runs dry) and whether the player on the lab network is online.",
-    "hash" : "5d386b4666d36c33",
+    "description" : "The song playing on the lab HomePod: title, artist, who added it and how (queue, next or cut_in), whether the caller liked it, position in seconds, paused, volume (0-100), autoplay (recommend a song when the queue runs dry) and whether the player on the lab network is online.",
+    "hash" : "43e38547bf1925cc",
     "input" : {
       "$schema" : "https://json-schema.org/draft/2020-12/schema",
       "properties" : {
@@ -114,6 +114,9 @@
                 },
                 "id" : {
                   "type" : "string"
+                },
+                "liked" : {
+                  "type" : "boolean"
                 },
                 "startedAt" : {
                   "anyOf" : [
@@ -190,6 +193,7 @@
                 "addedAs",
                 "fromPlaylist",
                 "track",
+                "liked",
                 "addedBy",
                 "endedBy",
                 "startedAt",
@@ -251,8 +255,8 @@
   },
   {
     "app" : "music",
-    "description" : "Songs waiting to play, in order, each with who added it and how (queue, next, cut_in). The playing song is not included; see now_playing.",
-    "hash" : "a5039ab7e5d35e35",
+    "description" : "Songs waiting to play, in order, each with who added it and how (queue, next, cut_in) and whether the caller liked it. The playing song is not included; see now_playing.",
+    "hash" : "d6cd40defc720a0d",
     "input" : {
       "$schema" : "https://json-schema.org/draft/2020-12/schema",
       "properties" : {
@@ -314,6 +318,9 @@
               },
               "id" : {
                 "type" : "string"
+              },
+              "liked" : {
+                "type" : "boolean"
               },
               "startedAt" : {
                 "anyOf" : [
@@ -390,6 +397,7 @@
               "addedAs",
               "fromPlaylist",
               "track",
+              "liked",
               "addedBy",
               "endedBy",
               "startedAt",
@@ -1405,8 +1413,8 @@
   },
   {
     "app" : "meetings",
-    "description" : "Every meeting booked through the portal from date (default today, Asia/Taipei) for days days, the lab meeting's weekly Teams meeting included (lab_meeting_id set; its program is in list_lab_meetings): room (null for an online-only meeting), date, start and end, status booked or cancelled (cancelled rows stay), title, agenda, project group, attendees, who booked it, and the Teams meeting's state (pending, success with join_url, or failed with the reason). Every member sees every booking; only the member who booked one can cancel it with cancel_meeting.",
-    "hash" : "d4461988d509dc1a",
+    "description" : "Every meeting booked through the portal from date (default today, Asia/Taipei) for days days, the lab meeting's weekly Teams meeting included (lab_meeting_id set; its program is in list_lab_meetings): room (null for an online-only meeting), date, start and end, status booked or cancelled (cancelled rows stay), title, agenda, project group, attendees, who booked it, and the Teams meeting's state (pending, success with join_url, or failed with the reason). Every member sees every booking; only the member who booked one (or the member it was booked with through book_appointment) can cancel it with cancel_meeting.",
+    "hash" : "540b8e1449a08b98",
     "input" : {
       "$schema" : "https://json-schema.org/draft/2020-12/schema",
       "properties" : {
@@ -1480,6 +1488,16 @@
               "endTime" : {
                 "type" : "string"
               },
+              "externalUrl" : {
+                "anyOf" : [
+                  {
+                    "type" : "null"
+                  },
+                  {
+                    "type" : "string"
+                  }
+                ]
+              },
               "groupName" : {
                 "anyOf" : [
                   {
@@ -1549,6 +1567,16 @@
                   }
                 ]
               },
+              "meetingPrefix" : {
+                "anyOf" : [
+                  {
+                    "type" : "null"
+                  },
+                  {
+                    "type" : "string"
+                  }
+                ]
+              },
               "online" : {
                 "type" : "boolean"
               },
@@ -1589,6 +1617,7 @@
               }
             },
             "required" : [
+              "title",
               "meeting",
               "id",
               "date",
@@ -1596,8 +1625,9 @@
               "endTime",
               "room",
               "online",
+              "externalUrl",
               "status",
-              "title",
+              "meetingPrefix",
               "agenda",
               "groupName",
               "attendees",

@@ -7,7 +7,7 @@ import Testing
 @Suite struct ContractDecoding {
     @Test func nowPlayingWithASong() throws {
         let json = #"""
-        {"current":{"id":"c0a8c1b1-00e5-406b-98ef-07b2d0e71e8b","status":"playing","addedAs":"queue","fromPlaylist":true,"track":{"videoId":"fIOTDdOwaCA","title":"Only When I Look into Your Eyes","artist":"Fiji Blue","durationS":200,"thumbnail":"https://example.com/a.jpg","createdAt":"2026-10-24T08:19:09.034Z"},"addedBy":"成員","endedBy":null,"startedAt":"2026-10-24T08:38:39.247Z","endedAt":null},"paused":false,"volume":55,"autoplay":true,"positionS":12.5,"state":"playing","error":null,"online":true}
+        {"current":{"id":"c0a8c1b1-00e5-406b-98ef-07b2d0e71e8b","status":"playing","addedAs":"queue","fromPlaylist":true,"liked":false,"track":{"videoId":"fIOTDdOwaCA","title":"Only When I Look into Your Eyes","artist":"Fiji Blue","durationS":200,"thumbnail":"https://example.com/a.jpg","createdAt":"2026-10-24T08:19:09.034Z"},"addedBy":"成員","endedBy":null,"startedAt":"2026-10-24T08:38:39.247Z","endedAt":null},"paused":false,"volume":55,"autoplay":true,"positionS":12.5,"state":"playing","error":null,"online":true}
         """#
         let out = try PortalClient.decoder.decode(NowPlaying.Output.self, from: Data(json.utf8))
         #expect(out.current?.track.title == "Only When I Look into Your Eyes")
