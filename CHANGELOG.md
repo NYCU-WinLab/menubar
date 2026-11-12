@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/NYCU-WinLab/menubar/compare/v0.3.1...v0.3.2) (2026-11-12)
+
+
+### Bug fixes
+
+* **contract:** sync the portal API contract and add liked to the fixture ([#18](https://github.com/NYCU-WinLab/menubar/issues/18)) ([0031038](https://github.com/NYCU-WinLab/menubar/commit/003103805106f41c304b79307525f010b04262cf))
+
 ## [0.3.1](https://github.com/NYCU-WinLab/menubar/compare/v0.3.0...v0.3.1) (2026-11-01)
 
 
