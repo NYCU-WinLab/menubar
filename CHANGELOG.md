@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/NYCU-WinLab/menubar/compare/v0.3.2...v0.3.3) (2026-11-16)
+
+
+### Bug fixes
+
+* show dish names in the bento menu ([#20](https://github.com/NYCU-WinLab/menubar/issues/20)) ([7972469](https://github.com/NYCU-WinLab/menubar/commit/797246935e8f7ff6fcd83b04b06861117d2cbc2f)), closes [#17](https://github.com/NYCU-WinLab/menubar/issues/17)
+
 ## [0.3.2](https://github.com/NYCU-WinLab/menubar/compare/v0.3.1...v0.3.2) (2026-11-12)
 
 
