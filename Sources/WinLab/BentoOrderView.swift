@@ -21,7 +21,8 @@ struct BentoOrderView: View {
                     Section(category.isEmpty ? "菜單" : category) {
                         Picker(selection: $dish) {
                             ForEach(detail.menu.filter { $0.category == category }, id: \.id) { item in
-                                LabeledContent(item.name, value: "\(Int(item.price)) 元").tag(Optional(item.id))
+                                // A radio group shows one text per option; LabeledContent kept only the price.
+                                Text("\(item.name)，\(Int(item.price)) 元").tag(Optional(item.id))
                             }
                         } label: {
                             EmptyView()
