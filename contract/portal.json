@@ -905,8 +905,8 @@
   },
   {
     "app" : "bento",
-    "description" : "One lunch order in full: the order (date, batch, status), its restaurant with the menu and option groups to order from, every line (id, member, dish, picked options, price), totals per member, and a tally per dish and option combination as the restaurant would take it.",
-    "hash" : "d4c0ee71b195897b",
+    "description" : "One lunch order in full: the order (date, batch, status), its restaurant with the menu (with each dish's average stars) and option groups to order from, every line (id, member, menuItemId, dish, picked options, price), the signed-in member's own stars per menuItemId, totals per member, and a tally per dish and option combination as the restaurant would take it.",
+    "hash" : "21e53d718f5eaf66",
     "input" : {
       "$schema" : "https://json-schema.org/draft/2020-12/schema",
       "properties" : {
@@ -986,6 +986,16 @@
               "member" : {
                 "type" : "string"
               },
+              "menuItemId" : {
+                "anyOf" : [
+                  {
+                    "type" : "null"
+                  },
+                  {
+                    "type" : "string"
+                  }
+                ]
+              },
               "name" : {
                 "type" : "string"
               },
@@ -1019,6 +1029,7 @@
               "id",
               "userId",
               "member",
+              "menuItemId",
               "name",
               "options",
               "price",
@@ -1043,17 +1054,34 @@
               },
               "price" : {
                 "type" : "number"
+              },
+              "rating" : {
+                "type" : "number"
+              },
+              "ratings" : {
+                "type" : "number"
               }
             },
             "required" : [
+              "ratings",
               "id",
               "category",
               "name",
-              "price"
+              "price",
+              "rating"
             ],
             "type" : "object"
           },
           "type" : "array"
+        },
+        "myRatings" : {
+          "additionalProperties" : {
+            "type" : "number"
+          },
+          "properties" : {
+
+          },
+          "type" : "object"
         },
         "optionGroups" : {
           "items" : {
@@ -1176,6 +1204,16 @@
                     "member" : {
                       "type" : "string"
                     },
+                    "menuItemId" : {
+                      "anyOf" : [
+                        {
+                          "type" : "null"
+                        },
+                        {
+                          "type" : "string"
+                        }
+                      ]
+                    },
                     "name" : {
                       "type" : "string"
                     },
@@ -1209,6 +1247,7 @@
                     "id",
                     "userId",
                     "member",
+                    "menuItemId",
                     "name",
                     "options",
                     "price",
@@ -1303,6 +1342,7 @@
         "menu",
         "optionGroups",
         "lines",
+        "myRatings",
         "people",
         "dishes",
         "totals"
@@ -1414,7 +1454,7 @@
   {
     "app" : "meetings",
     "description" : "Every meeting booked through the portal from date (default today, Asia/Taipei) for days days, the lab meeting's weekly Teams meeting included (lab_meeting_id set; its program is in list_lab_meetings): room (null for an online-only meeting), date, start and end, status booked or cancelled (cancelled rows stay), title, agenda, project group, attendees, who booked it, and the Teams meeting's state (pending, success with join_url, or failed with the reason). Every member sees every booking; only the member who booked one (or the member it was booked with through book_appointment) can cancel it with cancel_meeting.",
-    "hash" : "540b8e1449a08b98",
+    "hash" : "0ebad06dc3c185ba",
     "input" : {
       "$schema" : "https://json-schema.org/draft/2020-12/schema",
       "properties" : {
@@ -1596,6 +1636,16 @@
                   }
                 ]
               },
+              "seriesDate" : {
+                "anyOf" : [
+                  {
+                    "type" : "null"
+                  },
+                  {
+                    "type" : "string"
+                  }
+                ]
+              },
               "seriesId" : {
                 "anyOf" : [
                   {
@@ -1632,6 +1682,7 @@
               "groupName",
               "attendees",
               "seriesId",
+              "seriesDate",
               "labMeetingId",
               "requestedBy",
               "requestedByName",

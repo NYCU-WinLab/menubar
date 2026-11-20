@@ -6,13 +6,13 @@ import Foundation
 public enum Contract {
     public static let actions: [String: (app: String, hash: String)] = [
         "add_bento_order_item": (app: "bento", hash: "cbb8a827b0d66f9f"),
-        "get_bento_order": (app: "bento", hash: "d4c0ee71b195897b"),
+        "get_bento_order": (app: "bento", hash: "21e53d718f5eaf66"),
         "get_door_status": (app: "door", hash: "5104c2a84fcdfd13"),
         "get_lyrics": (app: "music", hash: "2f8bb4a5b21db86a"),
         "get_next_lab_meeting": (app: "meetings", hash: "b1fd95b2454c78fa"),
         "list_announcements": (app: "bulletin", hash: "441ae543f9b00897"),
         "list_bento_orders": (app: "bento", hash: "0f6c95bc5e889291"),
-        "list_meetings": (app: "meetings", hash: "540b8e1449a08b98"),
+        "list_meetings": (app: "meetings", hash: "0ebad06dc3c185ba"),
         "list_queue": (app: "music", hash: "d6cd40defc720a0d"),
         "now_playing": (app: "music", hash: "43e38547bf1925cc"),
         "open_door": (app: "door", hash: "39f3462bb92b4c7e"),
@@ -69,7 +69,7 @@ public enum AddBentoOrderItem: PortalAction {
 public enum GetBentoOrder: PortalAction {
     public static let name = "get_bento_order"
     public static let app = "bento"
-    public static let hash = "d4c0ee71b195897b"
+    public static let hash = "21e53d718f5eaf66"
 
     public struct Input: Encodable, Sendable, Equatable {
         public var orderId: String
@@ -83,6 +83,7 @@ public enum GetBentoOrder: PortalAction {
         public var dishes: [Dish]
         public var lines: [Line]
         public var menu: [MenuItem]
+        public var myRatings: [String: Double]
         public var optionGroups: [OptionGroup]
         public var order: Order
         public var people: [PeopleItem]
@@ -105,6 +106,7 @@ public enum GetBentoOrder: PortalAction {
             public var createdAt: Date
             public var id: String
             public var member: String
+            public var menuItemId: String?
             public var name: String
             public var options: [Option]
             public var price: Double
@@ -121,6 +123,8 @@ public enum GetBentoOrder: PortalAction {
             public var id: String
             public var name: String
             public var price: Double
+            public var rating: Double
+            public var ratings: Double
         }
 
         public struct OptionGroup: Decodable, Sendable, Equatable {
@@ -157,6 +161,7 @@ public enum GetBentoOrder: PortalAction {
                 public var createdAt: Date
                 public var id: String
                 public var member: String
+                public var menuItemId: String?
                 public var name: String
                 public var options: [Option]
                 public var price: Double
@@ -387,7 +392,7 @@ public enum ListBentoOrders: PortalAction {
 public enum ListMeetings: PortalAction {
     public static let name = "list_meetings"
     public static let app = "meetings"
-    public static let hash = "540b8e1449a08b98"
+    public static let hash = "0ebad06dc3c185ba"
 
     public struct Input: Encodable, Sendable, Equatable {
         public var date: String?
@@ -418,6 +423,7 @@ public enum ListMeetings: PortalAction {
             public var requestedBy: String
             public var requestedByName: String
             public var room: String?
+            public var seriesDate: String?
             public var seriesId: String?
             public var startTime: String
             public var status: String
